@@ -1,0 +1,40 @@
+{
+  "name" : "nested-graph",
+  "version" : "0.0.0",
+  "description": "JavaScript kata for directed acyclic graph data structure",
+  "homepage" : "https://github.com/dfkaye/nested-graph",
+  "author": {
+    "name": "david kaye (@dfkaye)",
+    "email" : "dfkaye@yahoo.com"
+  },
+  "contributors": [
+    {
+      "name": "david kaye (@dfkaye)",
+      "email": "dfkaye@yahoo.com"
+    } 
+  ],
+  "devDependencies": {
+    "tape": "~1.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dfkaye/nested-graph.git"
+  },
+  "scripts": {
+    "bundle" : "browserify test/suite.js -o browser/test-bundle.js",
+    "test": "node ./test/suite.js"
+  },  
+  "testling": {
+    "files": "test/**/*.js",
+    "browsers" : [
+      "ie/6..latest",
+      "chrome/20..latest",
+      "firefox/10..latest",
+      "safari/5..latest",
+      "opera/11.0..latest",
+      "iphone/6", 
+      "ipad/6"
+    ]
+  },
+  "main": "./nested-graph.js"
+}
