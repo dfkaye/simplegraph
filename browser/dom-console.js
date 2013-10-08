@@ -9,7 +9,7 @@
 
   var body = document.getElementsByTagName('body')[0];
   body.insertBefore(out, body.firstChild);
-
+  
   var slice = [].slice;
     
   function write(arg) {
@@ -48,18 +48,18 @@
         for (var k in console) {
           if (typeof console[k] == 'function') {
             !(function() {
-                var method = console[k];
-                if (k == 'clear') {
-                  console[k] = function() {
-                    clear(); 
-                    method.apply(console, arguments);
-                  };
-                } else {
-                  console[k] = function() {
-                    write(arguments); 
-                    method.apply(console, arguments);
-                  };
-                }
+              var method = console[k];
+              if (k == 'clear') {
+                console[k] = function() {
+                  clear(); 
+                  method.apply(console, arguments);
+                };
+              } else {
+                console[k] = function() {
+                  write(arguments); 
+                  method.apply(console, arguments);
+                };
+              }
             }());
           }
         }
