@@ -19,6 +19,10 @@
     li.innerHTML = '<code>' + slice.call(arg, 0).join('').replace(/[\n]/g, '<br/>').replace(/\s/g, '&nbsp;') + '</code>';
     results.appendChild(li);
   }
+  
+  function clear() {
+    results.innerHTML = '';
+  }
 
   !(function(){
   
@@ -27,35 +31,38 @@
       
       if (!global.console) {
       
-        console = {};
+        global.console = console = { clear: clear };
         names = ['error', 'info', 'log', 'warn', 'dir'];
         
-        for (var i = 0; i < names.length; ++i) {
-          console[names[i]] = function() {
+        for (var i = 0, k; i < names.length; ++i) {
+          k = names[i];
+          console[k] = function() {
             write(arguments); 
           };
         }
         
-        global.console = console;
-        
       } else {
       
-          console = global.console;
-          
-          for (var k in console) {
-            if (typeof console[k] == 'function') {
-            
-              !(function() {
-   
-                var method = console[k];
+        console = global.console;
 
-                console[k] = function() {
-                  write(arguments); 
-                  method.apply(console, arguments);
-                };
-              }());
-            }
+        for (var k in console) {
+          if (typeof console[k] == 'function') {
+            !(function() {
+                var method = console[k];
+                if (k == 'clear') {
+                  console[k] = function() {
+                    clear(); 
+                    method.apply(console, arguments);
+                  };
+                } else {
+                  console[k] = function() {
+                    write(arguments); 
+                    method.apply(console, arguments);
+                  };
+                }
+            }());
           }
+        }
       }
   }());
 
