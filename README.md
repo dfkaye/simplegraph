@@ -213,8 +213,7 @@ TODO
 
 + reformat the README markdown
 + rename dependants() - items that depend on certain node
-+ npm publish - [27 SEPT 2013] - simple-graph name was still available in July, 
-    but is now taken... renaming to simplegraph [7 OCT 2013]
+
 + add serialize and deserialize support ?
 + add topological sorting !!
 
@@ -223,6 +222,9 @@ __constructor__
 + unique ID constraint at Graph(id) ?
 + support a *root* field so we can always start at the top ?
 
++ <del>npm publish - [27 SEPT 2013] - simple-graph name was still available in 
+    July, but is now taken... renaming to nested-graph [7 OCT 2013]
++ <del>rename nested-graph to simplegraph (no hyphen) [12 DEC 2103]</del>
 + <del>add data element support - </del> __won't do that - final answer__
 + <del>rethink the remove() method - id vs. graph  now uses id</del>
 + <del>reconsider visitor(), resolve() and fn argument. detached post-processing fn</del>
