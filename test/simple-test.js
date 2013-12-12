@@ -1,6 +1,6 @@
-// nested-graph-test
+// simple-test
 var test = require('tape');
-var graph = require('../nested-graph');
+var graph = require('../simplegraph');
 
 /*** FIXTURES ***/
 

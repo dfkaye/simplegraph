@@ -1,4 +1,4 @@
-nested-graph
+simplegraph
 ============
 
 make a simple graph structure (used to be "simple-graph")
@@ -23,12 +23,12 @@ of a *node* - that is, every graph contains edges which is an array of other
 travis
 ------
 
-[![Build Status](https://travis-ci.org/dfkaye/nested-graph.png)](https://travis-ci.org/dfkaye/nested-graph)
+[![Build Status](https://travis-ci.org/dfkaye/simplegraph.png)](https://travis-ci.org/dfkaye/simplegraph)
 
 testling
 --------
 
-[![browser support](https://ci.testling.com/dfkaye/nested-graph.png)](https://ci.testling.com/dfkaye/nested-graph)
+[![browser support](https://ci.testling.com/dfkaye/simplegraph.png)](https://ci.testling.com/dfkaye/simplegraph)
 
 Using [tape](https://github.com/substack/tape) to run tests from the node.js 
 command line, and in order to use [testling](http://ci.testling.com/) from the
@@ -37,7 +37,7 @@ github service hook.
 tape from the command line
 --------------------------
 
-    cd ./nested-graph
+    cd ./simplegraph
     
 and either of these:
 
@@ -60,14 +60,14 @@ browserify](http://browserify.org) to create a test-bundle starting with the
 test suite file itself.  This pulls in the tape module and its dependencies 
 (there are many), plus the graph module and tests:
 
-    cd ./nested-graph
+    cd ./simplegraph
     browserify test/suite.js -o browser/test-bundle.js
     
 Use the alias for that command as in package.json:
 
     npm run-script 'bundle'
 
-__View the generated test-bundle page on <a href='//rawgithub.com/dfkaye/nested-graph/master/browser/test-bundle.html' 
+__View the generated test-bundle page on <a href='//rawgithub.com/dfkaye/simplegraph/master/browser/test-bundle.html' 
      target='_new' title='opens in new tab or window'>
   rawgithub</a>.__
   
@@ -214,7 +214,7 @@ TODO
 + reformat the README markdown
 + rename dependants() - items that depend on certain node
 + npm publish - [27 SEPT 2013] - simple-graph name was still available in July, 
-    but is now taken... renaming to nested-graph [7 OCT 2013]
+    but is now taken... renaming to simplegraph [7 OCT 2013]
 + add serialize and deserialize support ?
 + add topological sorting !!
 

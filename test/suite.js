@@ -1,7 +1,7 @@
 /*
- * happy test suite for nested-graph
+ * happy test suite for simplegraph
  */
-require('./nested-graph-test');
+require('./simple-test');
 
 // BIG FIXTURE IS JUST TOO BIG
 //require('./big-fixture-test');
