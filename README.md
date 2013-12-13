@@ -62,8 +62,15 @@ structure
 A graph contains an array of `edges` (other graphs). The required constructor 
 argument is a string `id`.  
 
-[13 DEC 13] *adding a root property*
+    var main = graph('main');
 
+That returns an object with the following fields:
+
+    .id:  'main'
+    .edges: []
+    .parents: []
+    .root: this
+    
 These are the only constructor-created properties. 
 
 The constructor can be called with or without the `new` keyword. 
@@ -73,12 +80,19 @@ No graph data element stored in a graph element - __final answer__
 methods
 -------
 
+To avoid cycles, always use `attach()` to modify the graph.
+
 __attach(graph)__
 
-`attach()` accepts a graph object as a child in the current graph.
+`attach()` accepts a graph object as a child in the current graph. The child's 
+`root` is set to the graph's `root`. The graph is pushed to the child's 
+`parents` array.
 
 If adding a graph that is __not__ already a child, `attach()` returns the added 
 child; else it returns __false__. 
+
+The `attach()` method uses `resolve()` internally, which throws an error if a 
+cycle is detected. __To avoid cycles, always use `attach()` to modify the graph.__
 
 __detach(id)__
 
@@ -86,6 +100,13 @@ __detach(id)__
 
 If a child matching the id is found, `detach()` returns returns the detached 
 child; else it returns __false__.
+
+The graph is removed from the child's `parents` array.  The child's `root` is 
+set to itself if the `parents` array is empty. 
+
+WARNING: the `attach()` method uses `resolve()` internally, which throws an 
+error if a cycle is detected. To avoid cycles, always use `attach()` to modify 
+the graph.
 
 __indexOf(id)__
 
@@ -108,6 +129,10 @@ descendant's id matches the given argument, the item is detached from its graph.
 
 `remove()` returns an array of all __parent__ graphs from which the target item 
 has been detached. This allows for graph "refreshes" or migrations as necessary.
+
+WARNING: the `remove()` method uses `resolve()` internally, which throws an 
+error if a cycle is detected. To avoid cycles, always use `attach()` to modify 
+the graph.
 
 __visitor(fn?)__
 
@@ -246,12 +271,9 @@ __View the generated test-bundle page on
 TODO
 ----
 
-+ add the root property and attach/detach logic to reassign it
-+ add topological sorting !!
-+ add serialize and deserialize support ?
-
-+ reformat the README markdown
-+ rename dependants() - items that depend on certain node
++ __add topological sorting__
++ add serialize and deserialize support *(maybe)*
++ rename dependants() - items that depend on certain node *(maybe)*
 
 __constructor__
 
@@ -259,6 +281,8 @@ __constructor__
 + unique ID constraint at Graph(id) ?
 + support a *root* field so we can always start at the top ?
 
++ <del>add the root property and attach/detach logic to reassign it</del>
++ <del>reformat the README markdown</del>
 + <del>npm publish - [27 SEPT 2013] - simple-graph name was still available in 
     July, but is now taken... renaming to nested-graph [7 OCT 2013]
 + <del>rename nested-graph to simplegraph (no hyphen) [12 DEC 2103]</del>
