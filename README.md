@@ -1,27 +1,18 @@
 simplegraph
 ============
 
-make a simple graph structure (used to be "simple-graph")
-
-justify
--------
-
-Everyone should figure out at least one directed acyclic graph data structure in 
-JavaScript.  Here's mine.
-
-__Thanks to Ferry Boender__ for his post on the 
-[dependency resolving algorithm](http://www.electricmonk.nl/log/2008/08/07/dependency-resolving-algorithm/),
-and for his ongoing encouragement in this exploration.
-
-what makes it simple?
----------------------
-
-What makes this implementation of the graph *simple* is that there is no concept
-of a *node* or node map. Rather, a graph instance contains an edges array of 
-other graph instances.
+Makes a simple graph structure (used to be "simple-graph")
 
 [13 DEC 13] *adding a root property, and some parent detail for re-assigning the
 root when attached or detached*
+
+Thanks to Ferry Boender
+-----------------------
+
+...for his post on the 
+[dependency resolving algorithm]
+(http://www.electricmonk.nl/log/2008/08/07/dependency-resolving-algorithm/),
+and for his ongoing encouragement in this exploration.
 
 travis
 ------
@@ -33,60 +24,31 @@ testling
 
 [![browser support](https://ci.testling.com/dfkaye/simplegraph.png)](https://ci.testling.com/dfkaye/simplegraph)
 
-Using [tape](https://github.com/substack/tape) to run tests from the node.js 
-command line, and in order to use [testling](http://ci.testling.com/) from the
-github service hook.
-
-tape from the command line
---------------------------
-
-    cd ./simplegraph
-    
-and either of these:
-
-    npm test
-    node ./test/suite.js
-    
-which will run both of these:
-
-    node ./test/simple-test.js
-    node ./test/big-fixture-test.js
-
-WARNING: The `big-fixture-test` generates over a million graph items, which on 
-some systems is ridiculously slow (8 seconds). That test is *not* bundled with 
-the browser suite.
-
-rawgithub test page
--------------------
-
-Testling has become unreliable for reasons I'm no longer interested in solving, 
-and I shouldn't have to bug them about it, or clone the service and fix it.  
-
-Sometimes the car should just drive, and if it can't, rent another one.  
-
-In this case, __*don't ask why; use browserify.*__
-
-In order to verify that the test suite runs locally or on rawgithub - and rather 
-than re-create the tests using jasmine, QUnit, or what-have-you, I now [use 
-browserify](http://browserify.org) to create a test-bundle starting with the 
-test suite file itself.  This pulls in the tape module and its dependencies 
-(there are many), plus the graph module and tests:
-
-    cd ./simplegraph
-    browserify ./test/simple-test.js -o ./browser-test/bundle.js
-    
-Use the alias for that command as defined in package.json:
-
-    npm run bundle
+rawgithub
+---------
 
 __View the generated test-bundle page on 
 <a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
    target='_new' title='opens in new tab or window'>rawgithub</a>.__
-  
-goals
------
 
-Needed this to work out some dependency loading trivia.  Also need it to be fast.
+justify
+-------
+
+Everyone should figure out at least one directed acyclic graph data structure in 
+JavaScript.  Here's mine.
+
+Using this for learning tests in order to work out dependency-loading trivia in 
+another project.
+
+what makes it simple?
+---------------------
+
+What makes this implementation of the graph *simple* is that there is no concept
+of a *node* or node map. Rather, a graph instance contains an edges array of 
+other graph instances.
+
+approach
+--------
 
 The graph children methods use procedural code (for-loops) rather than iterator 
 functions in order to support IE6-8 -- and execute a little faster (iterators 
@@ -221,7 +183,61 @@ subgraph - indented, something like:
      - d
      - e
 </pre>
-  
+
+tests
+-----
+
+Using [tape](https://github.com/substack/tape) to run tests from the node.js 
+command line, and in order to use [testling](http://ci.testling.com/) from the
+github service hook.
+
+tape from the command line
+--------------------------
+
+    cd ./simplegraph
+    
+and either of these:
+
+    npm test
+    node ./test/suite.js
+    
+which will run both of these:
+
+    node ./test/simple-test.js
+    node ./test/big-fixture-test.js
+
+WARNING: The `big-fixture-test` generates over a million graph items, which on 
+some systems is ridiculously slow (8+ seconds). That test is *not* bundled with 
+the browser suite.
+
+rawgithub test page
+-------------------
+
+Ran into problems with the Testling service which had become unreliable (now 
+fixed) due to json API changes.
+
+In order to verify that the test suite runs locally or on rawgithub - and rather 
+than re-create the tests using jasmine, QUnit, or what-have-you, I now [use 
+browserify](http://browserify.org) to create a test-bundle starting with the 
+test suite file itself.  This pulls in the `tape` module and its dependencies 
+(there are many many many of them), plus the graph module and tests:
+
+    cd ./simplegraph
+    browserify ./test/simple-test.js -o ./browser-test/bundle.js
+    
+Use the alias for that command as defined in package.json:
+
+    npm run bundle
+
+The rawgithub page includes a `dom-console.js` shim that outputs console 
+statements in the DOM, useful because tape outputs its results to 
+`console.log()`.
+
+__View the generated test-bundle page on 
+<a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
+   target='_new' title='opens in new tab or window'>rawgithub</a>.__
+   
+   
 TODO
 ----
 
