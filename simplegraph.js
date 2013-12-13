@@ -195,14 +195,14 @@ Graph.prototype.find = find;
 function find(id) {
 
   var graph = this;
-  var node = false;
+  var edge = false;
   
   var visitor = graph.visitor(function(graph) {
                         
     var index = graph.indexOf(id);
     
     if (index !== -1) {
-      node = graph.edges[index];
+      edge = graph.edges[index];
       
       // this terminates the search in resolve()
       visitor.done();
@@ -211,7 +211,7 @@ function find(id) {
   
   graph.resolve(visitor);
 
-  return node;
+  return edge;
 }
 
 // recursive print, copied+modified from Processing to JavaScript
