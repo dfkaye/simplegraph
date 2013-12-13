@@ -54,18 +54,19 @@ The graph children methods use procedural code (for-loops) rather than iterator
 functions in order to support IE6-8 -- and execute a little faster (iterators 
 run just under an order of magnitude slower).  
 
-The resolve (traversal) methods use visitor iteration methods internally.
+The *resolve* (traversal) methods use visitor iteration methods internally.
 
 structure
 ---------
 
-A graph contains an array of *edges* (other graphs).  The required constructor 
-argument is a string *id*.  
+A graph contains an array of `edges` (other graphs). The required constructor 
+argument is a string `id`.  
 
 [13 DEC 13] *adding a root property*
 
 These are the only constructor-created properties. 
-The constructor can be called with or without the *new* keyword. 
+
+The constructor can be called with or without the `new` keyword. 
 
 No graph data element stored in a graph element - __final answer__
 
@@ -74,94 +75,94 @@ methods
 
 __attach(graph)__
 
-attach() accepts a graph object as a child in the current graph.
+`attach()` accepts a graph object as a child in the current graph.
 
-If adding a graph that is already a child, attach() returns __false__; else it returns 
-the added child.
+If adding a graph that is __not__ already a child, `attach()` returns the added 
+child; else it returns __false__. 
 
 __detach(id)__
 
-detach() accepts a string id for the child in the current graph.
+`detach()` accepts a string id for the child in the current graph.
 
-If a child matching the id is not found, detach() returns __false__; else it returns
-the detached child.
+If a child matching the id is found, `detach()` returns returns the detached 
+child; else it returns __false__.
 
 __indexOf(id)__
 
-indexOf() accepts a string id for the target child of a graph.  If a child is 
+`indexOf()` accepts a string id for the target child of a graph. If a child is 
 found matching the id, the child is returned; else indexOf() returns __-1__.
 
 __find(id)__
 
-find() accepts a string id for the target descendant of a graph. If a child or 
-descendant is found matching the id, the found target is returned; else find() 
+`find()` accepts a string id for the target descendant of a graph. If a child or 
+descendant is found matching the id, the found target is returned; else `find()` 
 returns __false__.
 
 __remove(id)__
 
-remove() accepts a string id for the target as a child in the current graph or as 
-a descendant within any subgraph.
+`remove()` accepts a string id for the target as a child in the current graph or 
+as a descendant within any subgraph.
 
-remove() visits every child and descendant of the current graph.  If a descendant's id
-matches the given argument, the item is detached from its graph.  
+`remove()` visits every child and descendant of the current graph. If a 
+descendant's id matches the given argument, the item is detached from its graph.  
 
-remove() returns an array of all *parent* graphs from which the target item has been detached.
-This allows for graph "refreshes" or migrations as necessary.
+`remove()` returns an array of all __parent__ graphs from which the target item 
+has been detached. This allows for graph "refreshes" or migrations as necessary.
 
 __visitor(fn?)__
 
-Any graph object can create a visitor() object. A visitor will have an *ids* 
-array, *visited* map and *visiting* map, an empty results array, and a *done* 
-method by default.  
+Any graph object can create a `visitor` object. A visitor has an `id` set to the 
+creating graph's id, an `ids` array, `visited` and `visiting` maps, a `results` 
+array, and a `done()` method.  
 
-The visitor method can optionally take a *process* function argument.  The process 
-will run on the current graph being visited, before descending to edges.
+The `visitor()` method can optionally take a `process` function argument. The 
+process function will run on the current graph being visited *before* descending 
+to edges.
 
-The visitor object is used internally by the resolve() method for tracking visited
-subgraphs, and throwing an *error* if a cycle is detected.
+The visitor *object* is used internally by the `resolve()` method for tracking 
+visited subgraphs, and for throwing an `error` if a cycle is detected.
 
 __resolve(visitor?)__
 
-Any graph object can be resolved independently with the resolve() method.  The 
-resolve() method optionally accepts a visitor object.  If one is not specified,
-resolve() creates one for use internally from the graph on which the resolve() 
-method is first called.
+Any graph object can be resolved independently with the `resolve()` method.  The 
+`resolve()` method optionally accepts a `visitor` object. If one is *not* 
+specified, `resolve()` creates one for use internally from the graph on which 
+`resolve()` is first called.
 
-__about cycle detection:__
+__If the `resolve()` method detects a cycle, it will throw an error.__
 
-The resolve() method returns a visitor object, unless it throws an error when a 
-cycle is detected.
+If no cycle or other error occurs, `resolve()` returns a `visitor` object.
 
 __dependants(id) - aka 'fan-in'__
 
-dependants() accepts a string id for an item in the graph, and finds all graphs 
-in subgraph that depend on graph with given id.  Found graphs are returned in the 
-visitor*.results* array.
+`dependants()` accepts a string id for an item in the graph, and finds all 
+graphs in subgraph that depend on graph with given id. Found graphs are returned 
+in the `visitor.results` array.
 
-dependants() always returns a visitor object with a visitor*.results* field array.
+`dependants()` always returns a `visitor` object with a `visitor.results' array.
 
 __subgraph() - aka 'fan-out'__
 
-subgraph() traverses a graph's edges and their edges recursively, and returns 
-all graphs visited in the visitor.*results* array.  The current graph is *not* 
+`subgraph()` traverses a graph's edges and their edges recursively, and returns 
+all graphs visited in the `visitor.results` array. The current graph is __not__ 
 included as a dependency in the subgraph.  
 
-subgraph() always returns a visitor object with a visitor*.results* field array.
+`subgraph()` always returns a `visitor` object with a `visitor.results' array.
 
 __size()__
 
-size() uses subgraph() internally and returns the number of subgraph plus
+`size()` uses `subgraph()` internally and returns the number of subgraph plus
 the current graph itself.
 
 __list(depth?)__
 
-[ 5 AUG 2013 ] -- list() is currently a 'just for show' method. There's a 
+[ 5 AUG 2013 ] -- `list()` is currently a 'just for show' method. There's a 
 straight-forward implementation commented out, and a visitor-based impl that 
-adds [ 27 SEPT 2013 ] a visitor.after() method -- meaning some AOP is creeping 
-into the resolve() algorithm, so that definitely needs re-visiting (pun - sorry).
+adds [ 27 SEPT 2013 ] a `visitor.after()` method - meaning some AOP is creeping 
+into the `resolve()` algorithm, so that definitely needs re-visiting (pun - sorry).
 
-list() iterates over a graph and returns a string showing the graph and its 
-subgraph - indented, something like:
+`list()` iterates over a graph and returns a string showing the graph and its 
+subgraph, indented, something like:
 
 <pre>
  + main
@@ -209,6 +210,10 @@ which will run both of these:
 WARNING: The `big-fixture-test` generates over a million graph items, which on 
 some systems is ridiculously slow (8+ seconds). That test is *not* bundled with 
 the browser suite.
+
+Avoid big-fixture by running just the simple test:
+
+    npm run simple
 
 rawgithub test page
 -------------------
@@ -279,6 +284,7 @@ __constructor__
 
 __visitor__
 
++ <del>refactor the visitor - set visitor.id to creating graph.id by default</del> 
 + <del>refactor the visitor, resolve the visitor.walk vs graph.resolve quarrel</del> 
   - decided in favor of graph.resolve() with a visitor which is really a 
     collecting parameter plus one or two utility methods

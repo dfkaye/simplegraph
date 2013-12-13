@@ -23,6 +23,7 @@
   },
   "scripts": {
     "test": "node ./test/suite.js",
+    "simple": "node ./test/simple-test.js",
     "bundle" : "browserify ./test/simple-test.js -o ./browser-test/bundle.js"
   },  
   "testling": {

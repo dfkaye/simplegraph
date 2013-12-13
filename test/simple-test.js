@@ -36,7 +36,9 @@ function bdbCycle(main) {
   var d = main.find('d');
   
   // b -> c -> d -> b for the cycle
-  d.attach(b);
+  // manually push b on d for the cycle
+  // avoiding attach which uses resolve internally
+  d.edges.push(b);
 }
 
 /*** TESTS ***/
@@ -55,6 +57,8 @@ test('instance', function (t) {
   t.ok(main instanceof graph, 'main instanceof graph');
   t.ok(main.id === 'main', 'main.id');
   t.ok(main.edges, 'main.edges');
+  
+  t.ok(main.root === main, 'main root');
   
   t.equal(typeof main.attach, 'function', 'attach');
   t.equal(typeof main.indexOf, 'function', 'indexOf');
@@ -105,11 +109,55 @@ test('attach, indexOf, and detach child graph', function (t) {
     
   a.attach(b);
   t.ok(a.indexOf(id) > -1, 'indexOf b');
-  
+  t.equal(b.root, a, 'b.root should be a');
+
   child = a.detach(id);
   t.equal(a.indexOf(id), -1, 'detached b');
   t.equal(child.id, id, 'should be b');
+  t.equal(b.root, b, 'b.root should be b');
 
+  t.end();
+});
+
+test('attach and detach subgraph', function (t) {
+
+  var ids = ['main', 'a', 'b'];
+  var main = graph(ids[0]);
+  var a = graph(ids[1]);
+  var b = graph(ids[2]);
+  var visitor;
+  
+  a.attach(b);
+  t.equal(b.root, a, 'b.root should be a');
+  
+  main.attach(a);
+  t.equal(a.root, main, 'a.root should be main');
+  t.equal(b.root, main, 'b.root should be main');
+  
+  a = main.detach(a.id);
+  t.equal(a.root, a, 'a.root should be a');
+  t.equal(main.edges.length, 0, 'main should have no edges');
+  t.equal(b.root, a, 'b.root should be a');
+
+  a.detach(b.id);
+  t.equal(b.root, b, 'b.root should be b');
+  t.equal(a.edges.length, 0, 'a should have no edges');
+
+  t.end();
+});
+
+test('attach() with cycle throws Error(): main -> main', function (t) {
+
+  var msg = 'main -> main';
+  var main = graph('main');
+  var visitor;
+
+  function exec() {
+    main.attach(main);
+  }
+  
+  t.throws(exec, 'attach should detect cycle', msg);
+    
   t.end();
 });
 
@@ -118,6 +166,7 @@ test('visitor instance', function (t) {
   var main = fixture('main');
   var visitor = main.visitor();
     
+  t.equal(visitor.id, main.id, 'visitor id should be graph id');
   t.equal(visitor.ids.length, 0, 'ids array');
   t.ok(visitor.visited, 'visited');
   t.ok(visitor.visiting, 'visiting');
@@ -127,60 +176,56 @@ test('visitor instance', function (t) {
 
 test('resolve', function (t) {
     
-    var main = graph('main')
-    var visitor = main.resolve()
-        
-    t.equal(visitor.ids.length, 1, 'should visit 1')
-    
-    t.end()
+  var main = graph('main')
+  var visitor = main.resolve()
+      
+  t.equal(visitor.ids.length, 1, 'should visit 1')
+  
+  t.end()
 });
 
-test('resolve with process', function (t) {
-    
-    var main = fixture('main');
-    var visitor;
-    
-    function process(graph) {
-
-        if (graph.id === main.id) {
-            visitor.count++;
-        }
+test('resolve with process callback', function (t) {
+  
+  var main = fixture('main');
+  var visitor;
+  
+  function process(graph) {
+    if (graph.id === main.id) {
+      visitor.count++;
     }
-    
-    visitor = main.visitor(process);
-    
-    t.ok(visitor.process === process, 'should map process to visitor');
-    
-    // nonce property to be updated by process
-    visitor.count = 0;
-    
-    main.resolve(visitor);
-    
-    t.equal(visitor.count, 1, 'should count only one main');
-    
-    t.end();
+  }
+  
+  visitor = main.visitor(process);
+  
+  t.ok(visitor.process === process, 'should map process to visitor');
+  
+  // nonce property to be updated by process
+  visitor.count = 0;
+  
+  main.resolve(visitor);
+  
+  t.equal(visitor.count, 1, 'should count only one main');
+  
+  t.end();
 });
 
 test('done() halts resolve() processing', function (t) {
-    
-    var main = fixture('main');
-    var visitor;
-    
-    function process(graph) {
-
-        if (graph.id === main.id) {
-           
-            // halt processing/descent
-            visitor.done();
-        }
+  
+  var main = fixture('main');
+  var visitor;
+  
+  function process(graph) {
+    if (graph.id === main.id) {      
+      visitor.done();
     }
-    
-    visitor = main.visitor(process);
-    main.resolve(visitor);
-    
-    t.equal(visitor.ids.length, 1, 'should visit 1 item');
-    
-    t.end();
+  }
+  
+  visitor = main.visitor(process);
+  main.resolve(visitor);
+  
+  t.equal(visitor.ids.length, 1, 'should visit 1 item');
+  
+  t.end();
 });
 
 test('resolve all subgraphs in graph', function (t) {
@@ -193,8 +238,9 @@ test('resolve all subgraphs in graph', function (t) {
   
   a.attach(b);
   main.attach(a);
+
   visitor = main.resolve();
-    
+
   t.equal(visitor.ids.length, ids.length, 'should have ' + ids.length + ' entries');
   
   t.end();
@@ -213,7 +259,6 @@ test('resolve each subgraph', function (t) {
     visitor = main.edges[i].resolve();
     t.equal(visitor.ids[0], main.edges[i].id, 'first id should be ' + main.edges[i].id);
   }
-  
 });
 
 test('resolve cycle throws Error(): main -> main', function (t) {
@@ -223,12 +268,12 @@ test('resolve cycle throws Error(): main -> main', function (t) {
   var visitor;
 
   function exec() {
+    // manually push main onto edges to avoid calling attach() which uses resolve()...
+    main.edges.push(main);
     visitor = main.resolve();
   }
-  
-  main.attach(main);
-  
-  t.throws(exec, 'should detect cycle', msg);
+    
+  t.throws(exec, 'resolve should detect cycle', msg);
     
   t.end();
 })
@@ -256,7 +301,7 @@ test('remove all occurrences of item in subgraph', function (t) {
   var id = 'c';
   var visitor = main.remove(id);
   
-  t.equal(visitor.results.length, 3, 'should be removed from 3 graphs');
+  t.equal(visitor.results.length, 3, 'should remove\'c\' from 3 graphs');
   
   t.end();
 });
@@ -272,8 +317,8 @@ test('remove with cycle', function (t) {
   
   bdbCycle(main);
 
-  t.doesNotThrow(exec, 'should not throw on cycle');
-  t.equal(visitor.results.length, 3, 'should be removed from 3 graphs');
+  t.throws(exec, 'should throw on cycle');
+  //t.equal(visitor.results.length, 3, 'should be removed from 3 graphs');
   
   t.end();
 });
@@ -318,7 +363,8 @@ test('subgraph finds all graphs under the specified graph id', function (t) {
   t.end();
 })
 
-test('size returns the number of subgraph the in visitor.results field array plus the graph itself', function (t) {
+test('size returns count of subgraph items plus graph in visitor.results', function (t) {
+
   var names = ['a', 'b', 'c', 'd', 'e'];
 
   t.equal(fixture('main').size(), names.length + 1, 'should find 6 graphs');
@@ -347,10 +393,10 @@ test('find child', function (t) {
 test('find descendant', function (t) {
 
   var main = fixture('main');
-  var id = main.edges[0].edges[0].id;
+  var id = 'e';
   var descendant = main.find(id);
   
-  t.equal(descendant.id, id, 'should find descendant');
+  t.equal(descendant.id, id, 'should find \'e\'');
   
   t.end();
 });
@@ -360,7 +406,7 @@ test('find non-existent', function (t) {
   var main = fixture('main');
   var bonk = main.find('bonk');
   
-  t.notOk(bonk, 'should return no value');
+  t.notOk(bonk, 'should return no value for \'bonk\'');
   
   t.end();
 });
@@ -369,7 +415,7 @@ test('find descendant in cycle', function (t) {
 
   var main = fixture('main');
   
-  main.attach(main); // attach main to itself
+  main.edges.push(main);
   
   var id = main.edges[0].edges[0].id;
   var descendant;
@@ -393,7 +439,7 @@ test('find non-existent in cycle', function (t) {
     bonk = main.find('bonk');
   }
   
-  main.attach(main);
+  main.edges.push(main);
 
   t.throws(exec, 'should throw error');
   t.notOk(bonk, 'should return no value');
