@@ -1,10 +1,7 @@
 simplegraph
 ============
 
-Makes a simple graph structure (used to be "simple-graph")
-
-[13 DEC 13] *adding a root property, and some parent detail for re-assigning the
-root when attached or detached*
+Makes a *fairly* simple graph structure (used to be "simple-graph")
 
 Thanks to Ferry Boender
 -----------------------
