@@ -3,5 +3,5 @@
  */
 require('./simple-test');
 
-// BIG FIXTURE IS JUST TOO BIG
-//require('./big-fixture-test');
+// BIG FIXTURE IS TOO BIG FOR BROWSERS
+require('./big-fixture-test');

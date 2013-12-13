@@ -25,10 +25,10 @@ test('BIG FIXTURE: CREATE OVER ONE MILLION NODES AND TRAVERSE...', function (t) 
         for (var j = i + 1; j >= 0; --j) {
         
             name = '' + ++count
-            child.add(graph(name))
+            child.attach(graph(name))
         }
         
-        fixture.add(child)
+        fixture.attach(child)
       }
       
       console.log(((+new Date() - time) / 1000) + ' seconds to build ' + count + ' items')

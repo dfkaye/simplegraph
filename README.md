@@ -47,6 +47,15 @@ and either of these:
     npm test
     node ./test/suite.js
     
+which will run both of these:
+
+    node ./test/simple-test.js
+    node ./test/big-fixture-test.js
+
+WARNING: The `big-fixture-test` generates over a million graph items, which on 
+some systems is ridiculously slow (8 seconds). That test is *not* bundled with 
+the browser suite.
+
 rawgithub test page
 -------------------
 
@@ -64,7 +73,7 @@ test suite file itself.  This pulls in the tape module and its dependencies
 (there are many), plus the graph module and tests:
 
     cd ./simplegraph
-    browserify ./test/suite.js -o ./browser-test/bundle.js
+    browserify ./test/simple-test.js -o ./browser-test/bundle.js
     
 Use the alias for that command as defined in package.json:
 

@@ -9514,14 +9514,5 @@ test('print list', function (t) {
   t.end();
 });
 
-},{"../simplegraph":29,"tape":19}],31:[function(require,module,exports){
-/*
- * happy test suite for simplegraph
- */
-require('./simple-test');
-
-// BIG FIXTURE IS JUST TOO BIG
-//require('./big-fixture-test');
-
-},{"./simple-test":30}]},{},[31])
+},{"../simplegraph":29,"tape":19}]},{},[30])
 ;
