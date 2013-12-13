@@ -17,8 +17,11 @@ what makes it simple?
 ---------------------
 
 What makes this implementation of the graph *simple* is that there is no concept
-of a *node* - that is, every graph contains edges which is an array of other 
-*graphs*.
+of a *node* or node map. Rather, a graph instance contains an edges array of 
+other graph instances.
+
+[13 DEC 13] *adding a root property, and some parent detail for re-assigning the
+root when attached or detached*
 
 travis
 ------
@@ -61,15 +64,15 @@ test suite file itself.  This pulls in the tape module and its dependencies
 (there are many), plus the graph module and tests:
 
     cd ./simplegraph
-    browserify test/suite.js -o browser/test-bundle.js
+    browserify ./test/suite.js -o ./browser-test/bundle.js
     
-Use the alias for that command as in package.json:
+Use the alias for that command as defined in package.json:
 
-    npm run-script 'bundle'
+    npm run bundle
 
-__View the generated test-bundle page on <a href='//rawgithub.com/dfkaye/simplegraph/master/browser/test-bundle.html' 
-     target='_new' title='opens in new tab or window'>
-  rawgithub</a>.__
+__View the generated test-bundle page on 
+<a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
+   target='_new' title='opens in new tab or window'>rawgithub</a>.__
   
 goals
 -----
@@ -86,7 +89,9 @@ structure
 ---------
 
 A graph contains an array of *edges* (other graphs).  The required constructor 
-argument is a string *id*.  *may be adding a root property*
+argument is a string *id*.  
+
+[13 DEC 13] *adding a root property*
 
 These are the only constructor-created properties. 
 The constructor can be called with or without the *new* keyword. 
@@ -211,13 +216,15 @@ subgraph - indented, something like:
 TODO
 ----
 
++ add the root property and attach/detach logic to reassign it
++ add topological sorting !!
++ add serialize and deserialize support ?
+
 + reformat the README markdown
 + rename dependants() - items that depend on certain node
 
-+ add serialize and deserialize support ?
-+ add topological sorting !!
-
 __constructor__
+
 + call resolve() on each attach() call for early cycle detection ?
 + unique ID constraint at Graph(id) ?
 + support a *root* field so we can always start at the top ?
@@ -245,8 +252,8 @@ __constructor__
 + <del>rename evict() to delete()</del>
 + <del>rename delete() to remove()</del> - because delete is a keyword in certain browsers...
 
-
 __visitor__
+
 + <del>refactor the visitor, resolve the visitor.walk vs graph.resolve quarrel</del> 
   - decided in favor of graph.resolve() with a visitor which is really a 
     collecting parameter plus one or two utility methods
@@ -256,11 +263,9 @@ __visitor__
 + <del>add a before/after distinction, or preprocess-depthprocess-postprocess chain</del>
   - done but may re-visit due to creeping AOP and/or inelegant API.
 
-  
 + <del>6/2/13 - possible refactoring to try out</del> __24/06/13 - NO - these are bad ideas__
 
 + <del>let visitor have oncycle or onerror method</del>
 + <del>let delete, fanIn and others (cycle?) create a visitor with this method and decide what to do</del>
 + <del>then call resolve which will check visitor for oncycle and add error or call it if necessary.</del>
 + <del>rename resolve as visit; name cycle as resolve;</del>
-

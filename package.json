@@ -16,25 +16,25 @@
   "devDependencies": {
     "tape": "~1.0.4"
   },
+  "main": "./simplegraph.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/dfkaye/simplegraph.git"
   },
   "scripts": {
-    "bundle" : "browserify test/suite.js -o browser/test-bundle.js",
-    "test": "node ./test/suite.js"
+    "test": "node ./test/suite.js",
+    "bundle" : "browserify ./test/suite.js -o ./browser-test/bundle.js"
   },  
   "testling": {
-    "files": "test/**/*.js",
+    "files": "./test/**/*.js",
     "browsers" : [
       "ie/6..latest",
-      "chrome/20..latest",
-      "firefox/10..latest",
-      "safari/5..latest",
-      "opera/11.0..latest",
+      "chrome/latest",
+      "firefox/latest",
+      "safari/latest",
+      "opera/latest",
       "iphone/6", 
       "ipad/6"
     ]
-  },
-  "main": "./simplegraph.js"
+  }
 }
