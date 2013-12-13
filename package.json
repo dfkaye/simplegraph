@@ -26,7 +26,7 @@
     "bundle" : "browserify ./test/suite.js -o ./browser-test/bundle.js"
   },  
   "testling": {
-    "files": "./test/**/*.js",
+    "html": "./browser-test/suite.html",
     "browsers" : [
       "ie/6..latest",
       "chrome/latest",
