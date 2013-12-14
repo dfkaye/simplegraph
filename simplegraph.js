@@ -88,7 +88,7 @@ function detach(id) {
     edge = graph.edges.splice(i, 1)[0];
     
     var visitor = graph.visitor(function (child) {
-      // IE6-8 requires if loop rather than array#indexOf() or iteration methods
+      // IE6-8 require if-loop rather than array#indexOf() or iteration methods
       for (var j = 0; j < child.parents.length; j++) {
         if (child.parents[j] === graph) {
           child.parents = child.parents.splice(j, 1);
