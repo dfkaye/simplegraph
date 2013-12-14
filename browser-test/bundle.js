@@ -8762,6 +8762,25 @@ function Graph(id) {
 }
 
 /*
+ * return index of child with matching id
+ */
+Graph.prototype.indexOf = indexOf;
+function indexOf(id) {
+
+  var graph = this;
+  
+  for (var i = 0; i < graph.edges.length; ++i) {
+    if (graph.edges[i].id === id) {
+      return i;
+    }
+  }
+  
+  return -1;
+}
+
+// TRAVERSAL METHODS WITH RESOLVE AND VISITOR
+
+/*
  * attach child to current graph
  */
 Graph.prototype.attach = attach;
@@ -8790,23 +8809,6 @@ function attach(edge) {
 }
 
 /*
- * return index of child with matching id
- */
-Graph.prototype.indexOf = indexOf;
-function indexOf(id) {
-
-  var graph = this;
-  
-  for (var i = 0; i < graph.edges.length; ++i) {
-    if (graph.edges[i].id === id) {
-      return i;
-    }
-  }
-  
-  return -1;
-}
-
-/*
  * detach child with matching id
  */
 Graph.prototype.detach = detach;
@@ -8821,16 +8823,17 @@ function detach(id) {
     edge = graph.edges.splice(i, 1)[0];
     
     var visitor = graph.visitor(function (child) {
-    
-      child.parents = child.parents.splice(child.parents.indexOf(graph.id), 1);
-      
-      if (child.parents.length === 1) {
-      
-        child.root = edge;
-        
-        if (child.root === child) {
-          child.parents = [];
-        }        
+      // IE6-8 requires if loop rather than array#indexOf() or iteration methods
+      for (var j = 0; j < child.parents.length; j++) {
+        if (child.parents[j] === graph) {
+          child.parents = child.parents.splice(j, 1);
+        }
+        if (child.parents.length === 1) {
+          child.root = edge;
+          if (child === edge) {
+            child.parents = [];
+          }        
+        }
       }
     });
     
@@ -8839,8 +8842,6 @@ function detach(id) {
   
   return edge;
 }
-
-// TRAVERSAL METHODS WITH RESOLVE AND VISITOR
 
 /*
 * @method remove detaches all occurrences of subgraph from the graph and its descendants.
@@ -8930,14 +8931,14 @@ Graph.prototype.find = find;
 function find(id) {
 
   var graph = this;
-  var node = false;
+  var edge = false;
   
   var visitor = graph.visitor(function(graph) {
                         
     var index = graph.indexOf(id);
     
     if (index !== -1) {
-      node = graph.edges[index];
+      edge = graph.edges[index];
       
       // this terminates the search in resolve()
       visitor.done();
@@ -8946,7 +8947,7 @@ function find(id) {
   
   graph.resolve(visitor);
 
-  return node;
+  return edge;
 }
 
 // recursive print, copied+modified from Processing to JavaScript
