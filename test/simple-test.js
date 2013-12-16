@@ -471,3 +471,154 @@ test('print list', function (t) {
   
   t.end();
 });
+
+// sort
+test('sort fixture', function (t) {
+
+  t.plan(1)
+  
+  var main = fixture('main');
+  var expected = ['e','d','c','b','a','main'];
+  var results = main.sort();
+  
+  t.equal(results.join(' '), expected.join(' '));
+});
+
+test('sort fixture subgraph', function (t) {
+
+  t.plan(1)
+
+  var main = fixture('main');
+  var expected = ['e','d','c'];
+  
+  results = main.find('c').sort();
+  
+  t.equal(results.join(' '), expected.join(' ')); 
+});
+
+test('sort b-fixture', function (t) {
+
+  t.plan(1)
+  
+  var a = graph('a')
+  var b = graph('b')
+  var c = graph('c')
+  var d = graph('d')
+  var e = graph('e')
+  
+  d.attach(c)
+  d.attach(e)
+  
+  a.attach(c)
+  a.attach(d)
+  
+  b.attach(a)
+  b.attach(d)
+  
+  var expected = ['e','c','d', 'a', 'b'];
+  
+  results = b.sort();
+  
+  t.equal(results.join(' '), expected.join(' '));   
+});
+
+test('sort complex fixture', function (t) {
+
+  t.plan(1)
+  
+  var fixture = graph('fixture');
+  var ids = 'zyxwvutsrqponm'.split('');
+  var edges = {};
+  var expected = [];
+  
+  for (var i = 0, key; i < ids.length; ++i) {
+    key = ids[i];
+    edges[key] = graph(key);
+  }
+  
+  // build out the connections
+  fixture.attach(edges['m']);
+  fixture.attach(edges['n']);
+  fixture.attach(edges['o']);
+  fixture.attach(edges['p']);
+
+  edges['m'].attach(edges['q'])
+  edges['m'].attach(edges['r'])
+  edges['m'].attach(edges['x'])
+ 
+  edges['n'].attach(edges['q'])
+  edges['n'].attach(edges['u'])
+  edges['n'].attach(edges['o'])
+
+  edges['p'].attach(edges['o'])
+  edges['p'].attach(edges['s'])
+  edges['p'].attach(edges['z'])
+  
+  edges['o'].attach(edges['r'])
+  edges['o'].attach(edges['v'])  
+  edges['o'].attach(edges['s'])
+
+  edges['q'].attach(edges['t'])
+  
+  edges['s'].attach(edges['r'])
+
+  edges['r'].attach(edges['u'])
+  edges['r'].attach(edges['y'])
+  
+  edges['u'].attach(edges['t'])
+
+  edges['y'].attach(edges['v'])
+
+  edges['v'].attach(edges['x'])
+  edges['v'].attach(edges['w'])
+  
+  edges['w'].attach(edges['z'])
+  
+  // Build out expected ids array
+  
+  // fixture-m paths depth first
+  // leaf edges
+  // z: m-r-y-v-w-z
+  expected.push('z');
+  // x: m-r-y-v-x
+  expected.push('x');
+  // t: m-r-u-t)
+  expected.push('t');
+  // parent/owner edges
+  // q: m-q
+  expected.push('q');
+  // u: m-r-u
+  expected.push('u');
+  // w: m-r-y-v-w
+  expected.push('w');
+  // v: m-r-y-v
+  expected.push('v');
+  // y: m-r-y
+  expected.push('y');
+  // r: m-r
+  expected.push('r');
+  // m: fixture-m
+  expected.push('m');  
+  
+  // fixture-n paths depth first
+  // no leaf edges
+  // parent/owner edges  
+  // s: n-o-s
+  expected.push('s');
+  // o: n-o
+  expected.push('o'); 
+  // n: fixture-n
+  expected.push('n');
+  
+  // fixture-p depth first (nothing left)
+  expected.push('p');  
+
+  // depth 0 [fixture] (done)
+  expected.push('fixture');
+    
+  var results = fixture.sort()
+
+  t.equal(results.join(' '), expected.join(' '))
+});
+
+

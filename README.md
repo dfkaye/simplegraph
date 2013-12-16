@@ -77,7 +77,8 @@ No graph data element stored in a graph element - __final answer__
 methods
 -------
 
-To avoid cycles, always use `attach()` to modify the graph.
+__WORD OF WARNING: To avoid creating cycles within your graph, always use 
+`attach()` to add graph items to an existing graph.__
 
 __attach(graph)__
 
@@ -101,7 +102,7 @@ child; else it returns __false__.
 The graph is removed from the child's `parents` array.  The child's `root` is 
 set to itself if the `parents` array is empty. 
 
-WARNING: the `attach()` method uses `resolve()` internally, which throws an 
+WARNING: the `detach()` method uses `resolve()` internally, which throws an 
 error if a cycle is detected. To avoid cycles, always use `attach()` to modify 
 the graph.
 
@@ -207,6 +208,13 @@ subgraph, indented, something like:
      - e
 </pre>
 
+
+__sort()__
+
+[16 DEC 2013] -- `sort()` uses `visitor` internally, and returns an array of ids 
+found from the current graph being 'sorted' - in depth-first order.
+
+
 tests
 -----
 
@@ -268,19 +276,25 @@ __View the generated test-bundle page on
 TODO
 ----
 
-+ __add topological sorting__
-+ add serialize and deserialize support *(maybe)*
-+ rename dependants() - items that depend on certain node *(maybe)*
++ _add code snippets for each method in the README (especially for visitor)_
++ _split up the tests into smaller method-specific files_
++ <del>_add topological sort_</del>
++ add bulk attach capability
++ add serialize() (and deserialize ?) support *(maybe)*
++ rename `dependants()` - items that depend on certain node *(maybe)*
 
 __constructor__
 
-+ call resolve() on each attach() call for early cycle detection ?
-+ unique ID constraint at Graph(id) ?
-+ support a *root* field so we can always start at the top ?
++ unique ID constraint at Graph(id) ? (requires a map of ids on graph fn, or 
+    another closure)
 
++ <del>support a `root` field so we can `sort()` from the top by default</del>
++ <del>call resolve() on each attach() call for early cycle detection - needed 
+    for root/parents</del>
 + <del>add the root property and attach/detach logic to reassign it</del>
 + <del>reformat the README markdown</del>
-+ <del>npm publish - [27 SEPT 2013] - simple-graph name was still available in 
++ <del>npm publish - [done as simplegraph 12 DEC 2013] 
+    [27 SEPT 2013] - simple-graph name was still available in 
     July, but is now taken... renaming to nested-graph [7 OCT 2013]
 + <del>rename nested-graph to simplegraph (no hyphen) [12 DEC 2103]</del>
 + <del>add data element support - </del> __won't do that - final answer__
@@ -304,6 +318,8 @@ __constructor__
 + <del>rename delete() to remove()</del> - because delete is a keyword in certain browsers...
 
 __visitor__
+
++ some AOP before/after/done is creeping in ~ need to re-examine this api
 
 + <del>refactor the visitor - set visitor.id to creating graph.id by default</del> 
 + <del>refactor the visitor, resolve the visitor.walk vs graph.resolve quarrel</del> 
