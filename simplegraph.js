@@ -18,12 +18,10 @@ function Graph(id) {
     throw new Error('Graph() requires non-empty string id argument.')
   }
   
-  var graph = this;
-
-  graph.id = id;
-  graph.edges = [];
-  graph.parents = [];
-  graph.root = graph;  
+  this.id = id;
+  this.edges = [];
+  this.parents = [];
+  this.root = this;  
 }
 
 /*
@@ -33,13 +31,12 @@ function Graph(id) {
 *   method.
 * @returns visitor
 */
-Graph.prototype.resolve = resolve;
-function resolve(visitor) {
+Graph.prototype.resolve = function resolve(visitor) {
 
   var graph = this;
-  var id = graph.id;
+  var id = this.id;
   
-  visitor = visitor || graph.visitor();
+  visitor = visitor || this.visitor();
   
   if (!visitor.visited[id]) {
 
@@ -54,26 +51,26 @@ function resolve(visitor) {
   visitor.visiting[id] = 1;
 
   if (typeof visitor.process == 'function') {
-    visitor.process(graph);
+    visitor.process(this);
   }
   
   // descend if didn't call done() 
   if (!visitor.exit) {
-    for (var i = 0; i < graph.edges.length; ++i) {
-      graph.edges[i].resolve(visitor);
+    for (var i = 0; i < this.edges.length; ++i) {
+      this.edges[i].resolve(visitor);
     }
   }
   
   // post-processing
   if (typeof visitor.after == 'function') {
-    visitor.after(graph);
+    visitor.after(this);
   }
   
   visitor.visited[id] = 1;
   visitor.visiting[id] = 0;
   
   return visitor;
-}
+};
 
 /*
  * @method visitor - creates a visitor for use by the resolve() method
@@ -83,8 +80,7 @@ function resolve(visitor) {
  * - not sure if visitor should be an external object with visitor.visit(graph) api,
  * - or should continue with graph.resolve(visitor)...
  */
-Graph.prototype.visitor = visitor;
-function visitor(fn) {
+Graph.prototype.visitor = function visitor(fn) {
 
   var graph = this;
 
@@ -100,7 +96,7 @@ function visitor(fn) {
     process: fn,
     after: null
   };
-}
+};
 
 // notes for possible resolve improvements:
 /*
@@ -128,74 +124,75 @@ function visitor(fn) {
 /*
  * return index of child edge with matching id
  */
-Graph.prototype.indexOf = indexOf;
-function indexOf(id) {
+Graph.prototype.indexOf = function indexOf(id) {
 
-  var graph = this;
+  var edges = this.edges;
+  var length = edges.length;
   
-  for (var i = 0; i < graph.edges.length; ++i) {
-    if (graph.edges[i].id === id) {
+  for (var i = 0; i < length; ++i) {
+    if (edges[i].id === id) {
       return i;
     }
   }
   
   return -1;
-}
+};
 
 // TRAVERSAL METHODS WITH RESOLVE AND VISITOR
 
 /*
  * attach child to current graph
  */
-Graph.prototype.attach = attach;
-function attach(edge) {
+Graph.prototype.attach = function attach(edge) {
 
-  var graph = this;
+  if (this.indexOf(edge.id) === -1) {
   
-  if (graph.indexOf(edge.id) === -1) {
-  
-    graph.edges.push(edge)
+    this.edges.push(edge);
     
-    if (edge.indexOf(graph.id) === -1) {
-      edge.parents.push(graph.id);
+    if (edge.indexOf(this.id) === -1) {
+      edge.parents.push(this.id);
     }
     
-    var visitor = edge.visitor(function (edge) {
-      edge.root = graph.root;
+    var visitor = edge.visitor(function (child) {
+      // *this* refers to the visitor instance
+      child.root = this.root;
     });
+    
+    // assigns a nonce property on visitor that we can use inside the processing function
+    visitor.root = this.root;
     
     edge.resolve(visitor);
     
-    return edge
+    return edge;
   }
   
   return false;
-}
+};
 
 /*
  * detach child with matching id
  */
-Graph.prototype.detach = detach;
-function detach(id) {
+Graph.prototype.detach = function detach(id) {
 
-  var graph = this;
   var edge = false;
-  var i = graph.indexOf(id);
+  
+  var i = this.indexOf(id);
 
   if (i !== -1) {
   
-    edge = graph.edges.splice(i, 1)[0];
+    edge = this.edges.splice(i, 1)[0];
     
-    // visit from current edge - don't need graph until checking for it as a parent
-    // child means any descendant in this edge's subgraph
+    // visit from current edge - don't need the whole graph.
+    // 'child' means any descendant in this edge's subgraph.
     var visitor = edge.visitor(function (child) {
     
       // IE6-8 require if-loop rather than array#indexOf() or iteration methods
       for (var j = 0; j < child.parents.length; j++) {
       
-        // graph is referenced by closure
-        // could visit from graph instead and use visitor.id...
-        if (child.parents[j] === graph) {
+        // *this* is the visitor whose id is the starting graph element id
+        if (this.id === child.parents[j].id) {
+        
+          // BOOBY TROOP HERE - MODIFYING COLLECTION DURING ITERATION
           child.parents = child.parents.splice(j, 1);
         }
         
@@ -214,28 +211,25 @@ function detach(id) {
   }
   
   return edge;
-}
+};
 
 /*
 * @method remove detaches all occurrences of subgraph from the graph and its descendants.
 * param string id - required id of the subgraph to be detachd
 * returns an array of graphs from which the target has been detachd.
 */
-Graph.prototype.remove = remove;
-function remove(id) {
+Graph.prototype.remove = function remove(id) {
 
-  var graph = this;
-  
-  var visitor = graph.visitor(function(graph) {
-  
+  var visitor = this.visitor(function(edge) {
     // uses closure on id param
-    if (graph.detach(id)) {
-      visitor.results.push(graph);
+    if (edge.detach(id)) {
+      // *this* is the visitor
+      this.results.push(edge);
     }
   });
   
-  return graph.resolve(visitor);
-}
+  return this.resolve(visitor);
+};
 
 /*
  * @method dependants finds all graphs in subgraph that depend on graph with given id.
@@ -243,67 +237,55 @@ function remove(id) {
  * @returns a visitor with the results field as array of ids of graphs that depend on the 
  *  target subgraph.
  */
-Graph.prototype.dependants = dependants;
-function dependants(id) {
+Graph.prototype.dependants = function dependants(id) {
 
-  var graph = this;
-  
-  var visitor = graph.visitor(function(graph) {
-  
+  var visitor = this.visitor(function(edge) {
+    // *this* is the visitor
     // uses closure on id param
-    if (!visitor.visited[graph.id] && graph.indexOf(id) !== -1) {
-      visitor.results.push(graph);
+    if (!this.visited[edge.id] && edge.indexOf(id) !== -1) {
+      this.results.push(edge);
     }
   });
     
-  return graph.resolve(visitor);
-}
+  return this.resolve(visitor);
+};
 
 /*
  * @method subgraph finds all graphs in subgraph that the graph with given id depends on.
  * @returns a visitor with the results field as array of ids of graphs under the target 
  *  subgraph.
  */
-Graph.prototype.subgraph = subgraph;
-function subgraph() {
+Graph.prototype.subgraph = function subgraph() {
 
-  var graph = this;
-
-  var visitor = graph.visitor(function(graph) {
-  
+  var visitor = this.visitor(function(edge) {
+    // *this* is the visitor
     // visitor.id is graph.id on which visitor was created
-    if (!visitor.visited[graph.id] && visitor.id !== graph.id) {
-      visitor.results.push(graph);
+    if (!this.visited[edge.id] && this.id !== edge.id) {
+      this.results.push(edge);
     }
   });
   
-  return graph.resolve(visitor);
-}
+  return this.resolve(visitor);
+};
 
 /*
  * @method size counts all graphs in subgraph, and includes the current graph.
  * @returns the number of results.
  */
-Graph.prototype.size = size;
-function size() {
-
-  var graph = this;
- 
-  return graph.subgraph().results.length + 1;
-}
+Graph.prototype.size = function size() {
+  return this.subgraph().results.length + 1;
+};
 
 /*
  * @method find locates child or descendant with matching id in the graph or its subgraph.
  *  Uses the visitor in order to avoid throwing errors.  First match terminates search.
  * @returns first matching child or descendant graph
  */
-Graph.prototype.find = find;
-function find(id) {
+Graph.prototype.find = function find(id) {
 
-  var graph = this;
   var child = false;
   
-  var visitor = graph.visitor(function(edge) {
+  var visitor = this.visitor(function(edge) {
 
     // uses closure on id param
     var index = edge.indexOf(id);
@@ -312,15 +294,16 @@ function find(id) {
     
       child = edge.edges[index];
       
-      // this terminates the search in resolve()
-      visitor.done(); 
+      // terminate the search in resolve() on this visitor
+      // *this* is the visitor
+      this.done(); 
     }
   })
   
-  graph.resolve(visitor);
+  this.resolve(visitor);
 
   return child;
-}
+};
 
 // recursive print, copied+modified from Processing to JavaScript
 // ch. 7 of Visualizing Data by Ben Fry, O'Reilly, 2007
@@ -358,62 +341,60 @@ function list(depth) {
  *  traversal - uses the visitor.after() post-process callback approach.
  * @returns results array of visited graphs
  */
-Graph.prototype.list = list;
-function list() {
+Graph.prototype.list = function list() {
 
-  var graph = this;
-  var id = graph.id;
-
-  var visitor = graph.visitor();
-
-  visitor.depth = -1;
+  var visitor = this.visitor(function (edge) {
   
-  // on each
-  visitor.process = function (graph) {
-  
-    // unset this after() visiting...
-    visitor.depth += 2; 
+    // *this* is the visitor
     
-    for (var i = 0; i < visitor.depth; i++) {
-      visitor.results.push(' ');
+    // unset depth after() visiting...
+    this.depth += this.INDENT; 
+    
+    for (var i = 0; i < this.depth; i++) {
+      this.results.push(' ');
     }
 
-    if (graph.edges.length > 0) {
-      visitor.results.push('+');
+    if (edge.edges.length > 0) {
+      this.results.push('+');
     } else {
-      visitor.results.push('-');
+      this.results.push('-');
     }
     
-    visitor.results.push(' ' + graph.id + '\n');
-  }
+    this.results.push(' ' + edge.id + '\n');
+  });
+
+  // assign nonce properties we can use in process and after functions
+  visitor.depth = -1;
+  visitor.INDENT = 2;
   
   // post-processing aop
-  visitor.after = function (graph) {
-    visitor.depth -= 2;
+  visitor.after = function (edge) {
+    // *this* is the visitor
+    this.depth -= this.INDENT;
   }
   
-  return graph.resolve(visitor).results.join('');
-}
+  return this.resolve(visitor).results.join('');
+};
 
 // [14 DEC 2013] NEXT UP ~
 /*
  * returns the visitor's results array, depth first
  */
-Graph.prototype.sort = sort;
-function sort() {
+Graph.prototype.sort = function sort() {
 
   var visitor = this.visitor();
   
   visitor.after = function (edge) {
-  
-    if (!visitor.visited[edge.id]) {
+    
+    // *this* is the visitor
+    if (!this.visited[edge.id]) {
       if (edge.edges.length > 0) {
-        visitor.results.push(edge.id);
+        this.results.push(edge.id);
       } else {
-        visitor.results.unshift(edge.id);
+        this.results.unshift(edge.id);
       }
     }
   };
   
   return this.resolve(visitor).results;
-}
+};

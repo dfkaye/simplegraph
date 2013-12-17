@@ -41,8 +41,8 @@ what makes it simple?
 ---------------------
 
 What makes this implementation of the graph *simple* is that there is no concept
-of a *node* or node map. Rather, a graph instance contains an edges array of 
-other graph instances.
+of a *node* or node lookup map. Rather, a graph instance contains an array of 
+*edges* which are other graph instances. Nothing special.
 
 approach
 --------
@@ -53,42 +53,135 @@ run just under an order of magnitude slower).
 
 The *resolve* (traversal) methods use visitor iteration methods internally.
 
+[16 DEC 2103] that used to be true before I added the concept of a graph root, 
+which then required traversal on attach() (to prevent cycles eagerly) and 
+detach() (to break up root and parent correctly).
+
+use
+---
+
+node.js
+
+    var graph = require('../simplegraph');
+
+browser
+
+    window.Graph
+    
+    
 structure
 ---------
 
 A graph contains an array of `edges` (other graphs). The required constructor 
-argument is a string `id`.  
+argument is a string `id`.  The constructor can be called with or without the 
+`new` keyword. 
 
     var main = graph('main');
+    var main = new graph('main');
 
 That returns an object with the following fields:
 
-    .id:  'main'
-    .edges: []
-    .parents: []
-    .root: this
+    main.id      // string 'main'
+    main.edges   // array of graphs []
+    main.parents // array of graphs []
+    main.root    // this graph by default; reassigned by attach/detach
     
 These are the only constructor-created properties. 
 
-The constructor can be called with or without the `new` keyword. 
 
 No graph data element stored in a graph element - __final answer__
+
+traversal
+---------
+
+__visitor(fn?)__
+
+Any graph object can create a `visitor` object. A visitor has an `id` set to the 
+creating graph's id, an `ids` array, `visited` and `visiting` maps, a `results` 
+array, and a `done()` method.  
+
+The `visitor()` method can optionally take a `process` function argument. The 
+process function will run on the current graph being visited *before* descending 
+to edges. The function takes a graph param representing a child or edge.
+
+The visitor *object* is used internally by the `resolve()` method for tracking 
+visited subgraphs, and for throwing an `error` if a cycle is detected.
+
+__[ API/DOC IN PROGRESS ]__
+  
+The following snippet from the `attach()` method demonstrates a visitor usage. 
+It assigns every descendant element's root to the the starting graph element's 
+root:
+
+    var visitor = edge.visitor(function (child) {
+      // *this* refers to the visitor instance
+      child.root = this.root;
+    });
+    
+    // assigns a nonce property on visitor that we can use inside the processing 
+    // function
+    visitor.root = this.root;
+    
+    edge.resolve(visitor);
+
+__[ API/DOC IN PROGRESS ]__
+
+    // inspect visitor
+    id: graph.id  // in this case it will be 'main'
+    ids: []       // ids of each graph element visited
+    results: []   // collecting array of results 
+    visited: {}   // internal use for cycle detection
+    visiting: {}  // internal use for cycle detection
+    done: function () {
+      this.exit = true;
+    },        
+    process: fn   // optional iteration function to run visiting a graph element
+    after: null   // optional post-processing function to run when graph's 
+                  //  depth traversal is completed
+  
+
+__resolve(visitor?)__
+
+Any graph object can be resolved independently with the `resolve()` method.  The 
+`resolve()` method optionally accepts a `visitor` object. If one is *not* 
+specified, `resolve()` creates one for use internally from the graph on which 
+`resolve()` is first called.
+
+__If the `resolve()` method detects a cycle, it will throw an error.__
+
+If no cycle or other error occurs, `resolve()` returns a `visitor` object.
+
+__[ API/DOC IN PROGRESS ]__
+
 
 methods
 -------
 
-__WORD OF WARNING: To avoid creating cycles within your graph, always use 
-`attach()` to add graph items to an existing graph.__
-
 __attach(graph)__
 
 `attach()` accepts a graph object as a child in the current graph. The child's 
-`root` is set to the graph's `root`. The graph is pushed to the child's 
+`root` is set to the graph's `root`. The graph's id is pushed to the child's 
 `parents` array.
 
 If adding a graph that is __not__ already a child, `attach()` returns the added 
-child; else it returns __false__. 
+child; else it returns __false__.
 
+    var main = graph('main')
+    
+    var a = graph('a');
+    
+    main.attach(a);
+    // => a
+    
+    main.attach(a); // again
+    // => false
+    
+    a.root
+    // => main
+    
+    a.parents[0] 
+    // => 'main'
+    
 The `attach()` method uses `resolve()` internally, which throws an error if a 
 cycle is detected. __To avoid cycles, always use `attach()` to modify the graph.__
 
@@ -102,6 +195,18 @@ child; else it returns __false__.
 The graph is removed from the child's `parents` array.  The child's `root` is 
 set to itself if the `parents` array is empty. 
 
+    main.detach('a');
+    // => a
+    
+    main.detach('a'); // again
+    // => false
+    
+    a.root
+    // => a
+    
+    a.parents[0]
+    // => undefined
+    
 WARNING: the `detach()` method uses `resolve()` internally, which throws an 
 error if a cycle is detected. To avoid cycles, always use `attach()` to modify 
 the graph.
@@ -111,12 +216,26 @@ __indexOf(id)__
 `indexOf()` accepts a string id for the target child of a graph. If a child is 
 found matching the id, the child is returned; else indexOf() returns __-1__.
 
+    main.attach(a);
+    // => a
+    main.indexOf('a')
+    // 0
+    
+    main.detach('a');
+    // => a
+    main.indexOf('a')
+    // -1
+    
 __find(id)__
 
 `find()` accepts a string id for the target descendant of a graph. If a child or 
 descendant is found matching the id, the found target is returned; else `find()` 
 returns __false__.
 
+    // main -> a -> b -> c
+    main.find('c');
+    // => c
+    
 __remove(id)__
 
 `remove()` accepts a string id for the target as a child in the current graph or 
@@ -125,36 +244,20 @@ as a descendant within any subgraph.
 `remove()` visits every child and descendant of the current graph. If a 
 descendant's id matches the given argument, the item is detached from its graph.  
 
-`remove()` returns an array of all __parent__ graphs from which the target item 
-has been detached. This allows for graph "refreshes" or migrations as necessary.
+`remove()` returns a visitor with a `results` array of all __parent__ graphs 
+from which the target item has been detached. This allows for graph "refreshes" 
+or migrations as necessary.
 
+    // main -> a -> b -> c -> d
+    // a -> c -> e
+
+    var visitor = main.remove('c');
+    visitor.results
+    // => ['a', 'b']
+    
 WARNING: the `remove()` method uses `resolve()` internally, which throws an 
 error if a cycle is detected. To avoid cycles, always use `attach()` to modify 
 the graph.
-
-__visitor(fn?)__
-
-Any graph object can create a `visitor` object. A visitor has an `id` set to the 
-creating graph's id, an `ids` array, `visited` and `visiting` maps, a `results` 
-array, and a `done()` method.  
-
-The `visitor()` method can optionally take a `process` function argument. The 
-process function will run on the current graph being visited *before* descending 
-to edges.
-
-The visitor *object* is used internally by the `resolve()` method for tracking 
-visited subgraphs, and for throwing an `error` if a cycle is detected.
-
-__resolve(visitor?)__
-
-Any graph object can be resolved independently with the `resolve()` method.  The 
-`resolve()` method optionally accepts a `visitor` object. If one is *not* 
-specified, `resolve()` creates one for use internally from the graph on which 
-`resolve()` is first called.
-
-__If the `resolve()` method detects a cycle, it will throw an error.__
-
-If no cycle or other error occurs, `resolve()` returns a `visitor` object.
 
 __dependants(id) - aka 'fan-in'__
 
@@ -164,6 +267,13 @@ in the `visitor.results` array.
 
 `dependants()` always returns a `visitor` object with a `visitor.results' array.
 
+    // main -> a -> b -> c -> d
+    // a -> c -> e
+
+    var visitor = main.dependants('c');
+    visitor.results
+    // => ['a', 'b']
+    
 __subgraph() - aka 'fan-out'__
 
 `subgraph()` traverses a graph's edges and their edges recursively, and returns 
@@ -172,11 +282,27 @@ included as a dependency in the subgraph.
 
 `subgraph()` always returns a `visitor` object with a `visitor.results' array.
 
+    // main -> a -> b
+    //              b -> d    
+    //         a -> c -> e
+    
+    var visitor = main.subgraph();
+    visitor.results
+    // => ['a', 'b', 'd', 'c', 'e']
+    
 __size()__
 
 `size()` uses `subgraph()` internally and returns the number of subgraph plus
 the current graph itself.
 
+    // main -> a -> b
+    //              b -> d    
+    //         a -> c -> e
+    
+    main.size();
+    // => 6 
+    // (the ['a', 'b', 'd', 'c', 'e'] subgraph, plus main)
+    
 __list(depth?)__
 
 [ 5 AUG 2013 ] -- `list()` is currently a 'just for show' method. There's a 
@@ -187,6 +313,9 @@ into the `resolve()` algorithm, so that definitely needs re-visiting (pun - sorr
 `list()` iterates over a graph and returns a string showing the graph and its 
 subgraph, indented, something like:
 
+    main.list()
+    // =>
+    
 <pre>
  + main
    + a
@@ -212,9 +341,41 @@ subgraph, indented, something like:
 __sort()__
 
 [16 DEC 2013] -- `sort()` uses `visitor` internally, and returns an array of ids 
-found from the current graph being 'sorted' - in depth-first order.
+found from the current graph being 'sorted' in depth-first order.
 
+Call sort() on any graph element to retrieve the topo-sort for that element's 
+subgraph.
 
+    var main = graph('main');
+    var c = graph('c');
+    main.attach(c);
+    
+    // etc.
+    
+    var results;
+    // either
+    results = c.sort()
+    // or
+    results = main.find('c').sort();
+    
+Call sort() on any graph's `.root` element to retrieve the topo-sort for the 
+whole graph.
+
+    var main = graph('main');
+    var c = graph('c');
+    main.attach(c);
+    
+    // etc.
+    
+    var results;
+    // either
+    results = c.root.sort()
+    // or
+    results = main.find('c').root.sort();
+    // should return same results as
+    results = main.sort();
+    
+    
 tests
 -----
 

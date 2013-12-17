@@ -472,7 +472,9 @@ test('print list', function (t) {
   t.end();
 });
 
+
 // sort
+
 test('sort fixture', function (t) {
 
   t.plan(1)
@@ -490,10 +492,20 @@ test('sort fixture subgraph', function (t) {
 
   var main = fixture('main');
   var expected = ['e','d','c'];
-  
-  results = main.find('c').sort();
+  var results = main.find('c').sort();
   
   t.equal(results.join(' '), expected.join(' ')); 
+});
+
+test('sort by root', function (t) {
+  t.plan(1);
+  
+  var main = fixture('main');
+  var expected = ['e','d','c','b','a','main'];
+  var c = main.find('c');
+  var results = c.root.sort();
+  
+  t.equal(results.join(' '), expected.join(' '));   
 });
 
 test('sort b-fixture', function (t) {
@@ -517,7 +529,7 @@ test('sort b-fixture', function (t) {
   
   var expected = ['e','c','d', 'a', 'b'];
   
-  results = b.sort();
+  var results = b.sort();
   
   t.equal(results.join(' '), expected.join(' '));   
 });
@@ -620,5 +632,3 @@ test('sort complex fixture', function (t) {
 
   t.equal(results.join(' '), expected.join(' '))
 });
-
-
