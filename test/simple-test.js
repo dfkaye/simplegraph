@@ -184,22 +184,22 @@ test('resolve', function (t) {
   t.end()
 });
 
-test('resolve with process callback', function (t) {
+test('resolve with visit callback', function (t) {
   
   var main = fixture('main');
   var visitor;
   
-  function process(graph) {
+  function visit(graph) {
     if (graph.id === main.id) {
       visitor.count++;
     }
   }
   
-  visitor = main.visitor(process);
+  visitor = main.visitor(visit);
   
-  t.ok(visitor.process === process, 'should map process to visitor');
+  t.ok(visitor.visit === visit, 'should map visit to visitor');
   
-  // nonce property to be updated by process
+  // nonce property to be updated by visit
   visitor.count = 0;
   
   main.resolve(visitor);
@@ -214,13 +214,13 @@ test('done() halts resolve() processing', function (t) {
   var main = fixture('main');
   var visitor;
   
-  function process(graph) {
+  function visit(graph) {
     if (graph.id === main.id) {      
       visitor.done();
     }
   }
   
-  visitor = main.visitor(process);
+  visitor = main.visitor(visit);
   main.resolve(visitor);
   
   t.equal(visitor.ids.length, 1, 'should visit 1 item');

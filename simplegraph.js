@@ -50,8 +50,8 @@ Graph.prototype.resolve = function resolve(visitor) {
   // happy path
   visitor.visiting[id] = 1;
 
-  if (typeof visitor.process == 'function') {
-    visitor.process(this);
+  if (typeof visitor.visit == 'function') {
+    visitor.visit(this);
   }
   
   // descend if didn't call done() 
@@ -93,7 +93,7 @@ Graph.prototype.visitor = function visitor(fn) {
     done: function () {
       this.exit = true;
     },        
-    process: fn,
+    visit: fn,
     after: null
   };
 };
@@ -176,35 +176,43 @@ Graph.prototype.detach = function detach(id) {
 
   var edge = false;
   
-  var i = this.indexOf(id);
+  var index = this.indexOf(id);
 
-  if (i !== -1) {
+  if (index !== -1) {
   
-    edge = this.edges.splice(i, 1)[0];
+    edge = this.edges.splice(index, 1)[0];
     
     // visit from current edge - don't need the whole graph.
     // 'child' means any descendant in this edge's subgraph.
     var visitor = edge.visitor(function (child) {
     
+      // http://davidwalsh.name/javascript-clone-array
+      var parents = child.parents;
+      var copy = parents.slice(0);
+      
       // IE6-8 require if-loop rather than array#indexOf() or iteration methods
-      for (var j = 0; j < child.parents.length; j++) {
+      for (var i = 0; i < parents.length; i++) {
       
         // *this* is the visitor whose id is the starting graph element id
-        if (this.id === child.parents[j].id) {
-        
-          // BOOBY TROOP HERE - MODIFYING COLLECTION DURING ITERATION
-          child.parents = child.parents.splice(j, 1);
+        // if the child has this visitor's graph as a parent, remove it from this child
+        if (this.id === parents[i].id) {        
+          copy = parents.splice(i, 1);
         }
         
-        if (child.parents.length === 1) {
-        
-          child.root = edge;
+        // if only one parent left, point the root property to it
+        if (copy.length === 1) {
           
+          child.root = edge;
+
+          // if child is the edge, it's been detached entirely (no parents)
           if (child === edge) {
-            child.parents = [];
+            copy = [];
+            break;
           }        
         }
       }
+      
+      child.parents = copy;
     });
     
     edge.resolve(visitor);
@@ -259,7 +267,7 @@ Graph.prototype.subgraph = function subgraph() {
 
   var visitor = this.visitor(function(edge) {
     // *this* is the visitor
-    // visitor.id is graph.id on which visitor was created
+    // visitor id is the graph id on which visitor was created
     if (!this.visited[edge.id] && this.id !== edge.id) {
       this.results.push(edge);
     }
@@ -338,12 +346,19 @@ function list(depth) {
 
 /*
  * @method list - alternate version of list iterator - shows deficiency of depth-first 
- *  traversal - uses the visitor.after() post-process callback approach.
+ *  traversal - uses the visitor.after() post-visit callback approach.
  * @returns results array of visited graphs
  */
 Graph.prototype.list = function list() {
 
-  var visitor = this.visitor(function (edge) {
+  var visitor = this.visitor();
+
+  // assign nonce properties we can use in visit and after functions
+  visitor.depth = -1;
+  visitor.INDENT = 2;
+  
+  // explicit visit assignment - demonstrates flexibility given other properties to set.
+  visitor.visit = function (edge) {
   
     // *this* is the visitor
     
@@ -361,11 +376,7 @@ Graph.prototype.list = function list() {
     }
     
     this.results.push(' ' + edge.id + '\n');
-  });
-
-  // assign nonce properties we can use in process and after functions
-  visitor.depth = -1;
-  visitor.INDENT = 2;
+  };
   
   // post-processing aop
   visitor.after = function (edge) {

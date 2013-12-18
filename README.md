@@ -28,35 +28,14 @@ __View the generated test-bundle page on
 <a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
    target='_new' title='opens in new tab or window'>rawgithub</a>.__
 
-justify
+   
+install
 -------
 
-Everyone should figure out at least one directed acyclic graph data structure in 
-JavaScript.  Here's mine.
-
-Using this for learning tests in order to work out dependency-loading trivia in 
-another project.
-
-what makes it simple?
----------------------
-
-What makes this implementation of the graph *simple* is that there is no concept
-of a *node* or node lookup map. Rather, a graph instance contains an array of 
-*edges* which are other graph instances. Nothing special.
-
-approach
---------
-
-The graph children methods use procedural code (for-loops) rather than iterator 
-functions in order to support IE6-8 -- and execute a little faster (iterators 
-run just under an order of magnitude slower).  
-
-The *resolve* (traversal) methods use visitor iteration methods internally.
-
-[16 DEC 2103] that used to be true before I added the concept of a graph root, 
-which then required traversal on attach() (to prevent cycles eagerly) and 
-detach() (to break up root and parent correctly).
-
+    npm install simplegraph
+    
+    git clone git://github.com/dfkaye/simplegraph.git
+    
 use
 ---
 
@@ -66,9 +45,27 @@ node.js
 
 browser
 
+    // still being worked out but you can try this
     window.Graph
     
     
+justify
+-------
+
+Everyone should figure out at least one directed acyclic graph data structure in 
+JavaScript.  Here's mine.
+
+I'm using this for learning tests in order to work out dependency-loading trivia 
+in another project.
+
+what makes it simple?
+---------------------
+
+There is no concept of a *node* or node lookup map.  Rather, every object on a 
+graph is a graph instance whose *edges* are other graph instances.  Nothing 
+special, but traversal is required by almost every method.  Making *that* simple 
+has been a challenge.
+   
 structure
 ---------
 
@@ -88,11 +85,43 @@ That returns an object with the following fields:
     
 These are the only constructor-created properties. 
 
-
 No graph data element stored in a graph element - __final answer__
 
 traversal
 ---------
+
+The *resolve* (traversal) methods use visitor iteration methods internally.  The 
+pattern looks like this:
+
+    graph.resolve
+      visitor
+        iteratorFunction
+      and/or 
+        visitor.postProcessFunction
+
+Initially the graph child methods used procedural code (for-loops) rather than 
+iterator functions in order to support IE6-8 -- and execute a little faster 
+(iterators run just under an order of magnitude slower).  
+
+Once I added the concept of a graph *root* [16 DEC 2103], that required 
+traversal on attach() (to prevent cycles eagerly) and detach() (to break up root 
+and parent correctly).
+
+
+__resolve(visitor?)__
+
+Any graph object can be resolved independently with the `resolve()` method.  The 
+`resolve()` method __optionally__ accepts a `visitor` object.  If one is *not* 
+specified, `resolve()` creates one for use internally from the graph on which 
+`resolve()` is first called.  The visitor is a collecting parameter which lets 
+you manage results, terminate processing at specified points, and so on.
+
+__If the `resolve()` method detects a cycle, it will throw an error.__
+
+If no cycle or other error occurs, `resolve()` returns a `visitor` object.
+
+__[ API/DOC IN PROGRESS ]__
+
 
 __visitor(fn?)__
 
@@ -100,8 +129,8 @@ Any graph object can create a `visitor` object. A visitor has an `id` set to the
 creating graph's id, an `ids` array, `visited` and `visiting` maps, a `results` 
 array, and a `done()` method.  
 
-The `visitor()` method can optionally take a `process` function argument. The 
-process function will run on the current graph being visited *before* descending 
+The `visitor()` method can optionally take a `visit` function argument. The 
+visit function will run on the current graph being visited *before* descending 
 to edges. The function takes a graph param representing a child or edge.
 
 The visitor *object* is used internally by the `resolve()` method for tracking 
@@ -135,23 +164,11 @@ __[ API/DOC IN PROGRESS ]__
     done: function () {
       this.exit = true;
     },        
-    process: fn   // optional iteration function to run visiting a graph element
+    visit: fn   // optional iteration function to run visiting a graph element
     after: null   // optional post-processing function to run when graph's 
                   //  depth traversal is completed
   
 
-__resolve(visitor?)__
-
-Any graph object can be resolved independently with the `resolve()` method.  The 
-`resolve()` method optionally accepts a `visitor` object. If one is *not* 
-specified, `resolve()` creates one for use internally from the graph on which 
-`resolve()` is first called.
-
-__If the `resolve()` method detects a cycle, it will throw an error.__
-
-If no cycle or other error occurs, `resolve()` returns a `visitor` object.
-
-__[ API/DOC IN PROGRESS ]__
 
 
 methods
@@ -399,10 +416,11 @@ which will run both of these:
     node ./test/big-fixture-test.js
 
 WARNING: The `big-fixture-test` generates over a million graph items, which on 
-some systems is ridiculously slow (8+ seconds). That test is *not* bundled with 
-the browser suite.
+some systems is ridiculously slow (*15+ seconds!*). It's done in a blocking 
+manner on node.js rather than with `process.nextTick` - maybe I'll try that 
+later.  Anyway, big-fixture test is *not* bundled with the browser suite.
 
-Avoid big-fixture by running just the simple test:
+Avoid big-fixture on node.js by running just the simple test:
 
     npm run simple
 
