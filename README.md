@@ -352,23 +352,6 @@ subgraph.
     // or
     results = main.find('c').sort();
     
-Call sort() on any graph's `.root` element to retrieve the topo-sort for the 
-whole graph.
-
-    var main = graph('main');
-    var c = graph('c');
-    main.attach(c);
-    
-    // etc.
-    
-    var results;
-    // either
-    results = c.root.sort()
-    // or
-    results = main.find('c').root.sort();
-    // should return same results as
-    results = main.sort();
-    
     
 tests
 -----
