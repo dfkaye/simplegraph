@@ -58,7 +58,7 @@ test('instance', function (t) {
   t.ok(main.id === 'main', 'main.id');
   t.ok(main.edges, 'main.edges');
   
-  t.ok(main.root === main, 'main root');
+  //t.ok(main.root === main, 'main root');
   
   t.equal(typeof main.attach, 'function', 'attach');
   t.equal(typeof main.indexOf, 'function', 'indexOf');
@@ -109,12 +109,12 @@ test('attach, indexOf, and detach child graph', function (t) {
     
   a.attach(b);
   t.ok(a.indexOf(id) > -1, 'indexOf b');
-  t.equal(b.root, a, 'b.root should be a');
+  //t.equal(b.root, a, 'b.root should be a');
 
   child = a.detach(id);
   t.equal(a.indexOf(id), -1, 'detached b');
   t.equal(child.id, id, 'should be b');
-  t.equal(b.root, b, 'b.root should be b');
+  //t.equal(b.root, b, 'b.root should be b');
 
   t.end();
 });
@@ -128,19 +128,19 @@ test('attach and detach subgraph', function (t) {
   var visitor;
   
   a.attach(b);
-  t.equal(b.root, a, 'b.root should be a');
+  //t.equal(b.root, a, 'b.root should be a');
   
   main.attach(a);
-  t.equal(a.root, main, 'a.root should be main');
-  t.equal(b.root, main, 'b.root should be main');
+  //t.equal(a.root, main, 'a.root should be main');
+  //t.equal(b.root, main, 'b.root should be main');
   
   a = main.detach(a.id);
-  t.equal(a.root, a, 'a.root should be a');
+  //t.equal(a.root, a, 'a.root should be a');
   t.equal(main.edges.length, 0, 'main should have no edges');
-  t.equal(b.root, a, 'b.root should be a');
+  //t.equal(b.root, a, 'b.root should be a');
 
   a.detach(b.id);
-  t.equal(b.root, b, 'b.root should be b');
+  //t.equal(b.root, b, 'b.root should be b');
   t.equal(a.edges.length, 0, 'a should have no edges');
 
   t.end();
@@ -317,8 +317,9 @@ test('remove with cycle', function (t) {
   
   bdbCycle(main);
 
-  t.throws(exec, 'should throw on cycle');
-  //t.equal(visitor.results.length, 3, 'should be removed from 3 graphs');
+  //t.throws(exec, 'should throw on cycle');
+  t.doesNotThrow(exec, 'should not throw on cycle');
+  t.equal(visitor.results.length, 3, 'should be removed from 3 graphs');
   
   t.end();
 });
@@ -497,16 +498,16 @@ test('sort fixture subgraph', function (t) {
   t.equal(results.join(' '), expected.join(' ')); 
 });
 
-test('sort by root', function (t) {
-  t.plan(1);
+// test('sort by root', function (t) {
+  // t.plan(1);
   
-  var main = fixture('main');
-  var expected = ['e','d','c','b','a','main'];
-  var c = main.find('c');
-  var results = c.root.sort();
+  // var main = fixture('main');
+  // var expected = ['e','d','c','b','a','main'];
+  // var c = main.find('c');
+  // var results = c.root.sort();
   
-  t.equal(results.join(' '), expected.join(' '));   
-});
+  // t.equal(results.join(' '), expected.join(' '));   
+// });
 
 test('sort b-fixture', function (t) {
 

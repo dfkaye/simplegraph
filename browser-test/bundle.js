@@ -8755,8 +8755,6 @@ function Graph(id) {
   
   this.id = id;
   this.edges = [];
-  this.parents = [];
-  this.root = this;  
 }
 
 /*
@@ -8768,13 +8766,16 @@ function Graph(id) {
 */
 Graph.prototype.resolve = function resolve(visitor) {
 
-  var graph = this;
+  // code smell ~ four guard clauses
+  
   var id = this.id;
+  var edges;
+  var length;
   
   visitor = visitor || this.visitor();
   
   if (!visitor.visited[id]) {
-
+  
     visitor.ids.push(id);
     
     if (visitor.visiting[id]) {
@@ -8791,11 +8792,14 @@ Graph.prototype.resolve = function resolve(visitor) {
   
   // descend if didn't call done() 
   if (!visitor.exit) {
-    for (var i = 0; i < this.edges.length; ++i) {
-      this.edges[i].resolve(visitor);
+    edges = this.edges;
+    length = edges.length;
+    for (var i = 0; i < length; ++i) {
+      edges[i].resolve(visitor);
     }
   }
   
+  // code smell ~ after clause
   // post-processing
   if (typeof visitor.after == 'function') {
     visitor.after(this);
@@ -8833,28 +8837,6 @@ Graph.prototype.visitor = function visitor(fn) {
   };
 };
 
-// notes for possible resolve improvements:
-/*
-    {
-      ...
-      after: fn(fn) {
-        this.postprocess || (this.postprocess = []);
-        this.postprocess.push(fn);
-    }
-    
-    // assignment:
-    
-    visitor.after(fn);
-    
-    // then in resolve():
-    
-    if (visitor.postprocess) {
-      for (var i = 0; i < visitor.postprocess.length; ++i) {
-        visitor.postprocess[i](graph);
-      }
-    }
-
-*/
 
 /*
  * return index of child edge with matching id
@@ -8884,19 +8866,7 @@ Graph.prototype.attach = function attach(edge) {
   
     this.edges.push(edge);
     
-    if (edge.indexOf(this.id) === -1) {
-      edge.parents.push(this.id);
-    }
-    
-    var visitor = edge.visitor(function (child) {
-      // *this* refers to the visitor instance
-      child.root = this.root;
-    });
-    
-    // assigns a nonce property on visitor that we can use inside the processing function
-    visitor.root = this.root;
-    
-    edge.resolve(visitor);
+    edge.resolve();
     
     return edge;
   }
@@ -8908,52 +8878,14 @@ Graph.prototype.attach = function attach(edge) {
  * detach child with matching id
  */
 Graph.prototype.detach = function detach(id) {
-
-  var edge = false;
   
   var index = this.indexOf(id);
 
   if (index !== -1) {
-  
-    edge = this.edges.splice(index, 1)[0];
-    
-    // visit from current edge - don't need the whole graph.
-    // 'child' means any descendant in this edge's subgraph.
-    var visitor = edge.visitor(function (child) {
-    
-      // http://davidwalsh.name/javascript-clone-array
-      var parents = child.parents;
-      var copy = parents.slice(0);
-      
-      // IE6-8 require if-loop rather than array#indexOf() or iteration methods
-      for (var i = 0; i < parents.length; i++) {
-      
-        // *this* is the visitor whose id is the starting graph element id
-        // if the child has this visitor's graph as a parent, remove it from this child
-        if (this.id === parents[i].id) {        
-          copy = parents.splice(i, 1);
-        }
-        
-        // if only one parent left, point the root property to it
-        if (copy.length === 1) {
-          
-          child.root = edge;
-
-          // if child is the edge, it's been detached entirely (no parents)
-          if (child === edge) {
-            copy = [];
-            break;
-          }        
-        }
-      }
-      
-      child.parents = copy;
-    });
-    
-    edge.resolve(visitor);
+    return this.edges.splice(index, 1)[0];
   }
   
-  return edge;
+  return false;
 };
 
 /*
@@ -9122,7 +9054,6 @@ Graph.prototype.list = function list() {
   return this.resolve(visitor).results.join('');
 };
 
-// [14 DEC 2013] NEXT UP ~
 /*
  * returns the visitor's results array, depth first
  */
@@ -9146,6 +9077,93 @@ Graph.prototype.sort = function sort() {
 };
 
 },{}],30:[function(require,module,exports){
+// big-fixture-test
+var test = require('tape')
+var graph = require('../simplegraph')
+
+/*** TESTS ***/
+
+var count, fixture, last;
+
+test('BIG FIXTURE SETUP creates over a million elements', function(t) {
+
+  t.plan(1);
+  
+  count = 0;
+  //name = '' + ++count;
+  fixture = graph('' + ++count);
+  
+  var child;
+  var time = (new Date()).getTime();
+  
+  for (var i = 0; i < 1500; i++) {
+  
+    //name = '' + ++count;
+    child = graph('' + ++count);
+    
+    for (var j = i + 1; j >= 0; --j) {
+    
+      //name = '' + ++count;
+      //child.attach(graph(name))
+      //if (child.indexOf(name) === -1) {
+        child.edges.push(graph('' + ++count))
+      //}
+    }
+    
+    //fixture.attach(child);
+    fixture.edges.push(child)
+  }
+  
+  last = child.id;
+  
+  console.log((((new Date()).getTime() - time) / 1000) + ' seconds to build ' + count + ' items')
+  
+  t.ok(count > 1000000, 'should be over a million elements');
+});
+  
+test('big fixture size', function(t) {
+
+  t.plan(1);
+  
+  var time = (new Date()).getTime();
+  
+  t.equal(fixture.size(), count, 'should have ' + count + ' items')
+  console.log((((new Date()).getTime() - time) / 1000) + ' seconds to size ' + count + ' items')
+});
+
+test('big fixture find first child', function(t) {
+
+  t.plan(1);
+
+  var id = '' + 2;
+  var time = (new Date()).getTime();
+  
+  t.equal(fixture.find(id).id, id, 'should find first child [' + id + ']')
+  console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
+});
+
+test('big fixture find random id', function(t) {
+
+  t.plan(1);
+
+  var id = '' + Math.ceil(Math.sqrt(count) * Math.random(Math.sqrt(count)));
+  var time = (new Date()).getTime();
+  
+  t.equal(fixture.find(id).id, id, 'should find by random id [' + id + ']')
+  console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
+});
+
+test('big fixture find last last created element by name', function(t) {
+
+  t.plan(1);
+
+  var id = last; // re-using this from the setup
+  var time = (new Date()).getTime();
+  
+  t.equal(fixture.find(id).id, id, 'should find last element [' + id + ']')
+  console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
+});
+},{"../simplegraph":29,"tape":19}],31:[function(require,module,exports){
 // simple-test
 var test = require('tape');
 var graph = require('../simplegraph');
@@ -9206,7 +9224,7 @@ test('instance', function (t) {
   t.ok(main.id === 'main', 'main.id');
   t.ok(main.edges, 'main.edges');
   
-  t.ok(main.root === main, 'main root');
+  //t.ok(main.root === main, 'main root');
   
   t.equal(typeof main.attach, 'function', 'attach');
   t.equal(typeof main.indexOf, 'function', 'indexOf');
@@ -9257,12 +9275,12 @@ test('attach, indexOf, and detach child graph', function (t) {
     
   a.attach(b);
   t.ok(a.indexOf(id) > -1, 'indexOf b');
-  t.equal(b.root, a, 'b.root should be a');
+  //t.equal(b.root, a, 'b.root should be a');
 
   child = a.detach(id);
   t.equal(a.indexOf(id), -1, 'detached b');
   t.equal(child.id, id, 'should be b');
-  t.equal(b.root, b, 'b.root should be b');
+  //t.equal(b.root, b, 'b.root should be b');
 
   t.end();
 });
@@ -9276,19 +9294,19 @@ test('attach and detach subgraph', function (t) {
   var visitor;
   
   a.attach(b);
-  t.equal(b.root, a, 'b.root should be a');
+  //t.equal(b.root, a, 'b.root should be a');
   
   main.attach(a);
-  t.equal(a.root, main, 'a.root should be main');
-  t.equal(b.root, main, 'b.root should be main');
+  //t.equal(a.root, main, 'a.root should be main');
+  //t.equal(b.root, main, 'b.root should be main');
   
   a = main.detach(a.id);
-  t.equal(a.root, a, 'a.root should be a');
+  //t.equal(a.root, a, 'a.root should be a');
   t.equal(main.edges.length, 0, 'main should have no edges');
-  t.equal(b.root, a, 'b.root should be a');
+  //t.equal(b.root, a, 'b.root should be a');
 
   a.detach(b.id);
-  t.equal(b.root, b, 'b.root should be b');
+  //t.equal(b.root, b, 'b.root should be b');
   t.equal(a.edges.length, 0, 'a should have no edges');
 
   t.end();
@@ -9465,8 +9483,9 @@ test('remove with cycle', function (t) {
   
   bdbCycle(main);
 
-  t.throws(exec, 'should throw on cycle');
-  //t.equal(visitor.results.length, 3, 'should be removed from 3 graphs');
+  //t.throws(exec, 'should throw on cycle');
+  t.doesNotThrow(exec, 'should not throw on cycle');
+  t.equal(visitor.results.length, 3, 'should be removed from 3 graphs');
   
   t.end();
 });
@@ -9645,16 +9664,16 @@ test('sort fixture subgraph', function (t) {
   t.equal(results.join(' '), expected.join(' ')); 
 });
 
-test('sort by root', function (t) {
-  t.plan(1);
+// test('sort by root', function (t) {
+  // t.plan(1);
   
-  var main = fixture('main');
-  var expected = ['e','d','c','b','a','main'];
-  var c = main.find('c');
-  var results = c.root.sort();
+  // var main = fixture('main');
+  // var expected = ['e','d','c','b','a','main'];
+  // var c = main.find('c');
+  // var results = c.root.sort();
   
-  t.equal(results.join(' '), expected.join(' '));   
-});
+  // t.equal(results.join(' '), expected.join(' '));   
+// });
 
 test('sort b-fixture', function (t) {
 
@@ -9780,5 +9799,14 @@ test('sort complex fixture', function (t) {
 
   t.equal(results.join(' '), expected.join(' '))
 });
-},{"../simplegraph":29,"tape":19}]},{},[30])
+},{"../simplegraph":29,"tape":19}],32:[function(require,module,exports){
+/*
+ * happy test suite for simplegraph
+ */
+require('./simple-test');
+
+// BIG FIXTURE IS TOO BIG FOR BROWSERS
+require('./big-fixture-test');
+
+},{"./big-fixture-test":30,"./simple-test":31}]},{},[32])
 ;

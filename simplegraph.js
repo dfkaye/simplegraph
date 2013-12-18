@@ -20,8 +20,6 @@ function Graph(id) {
   
   this.id = id;
   this.edges = [];
-  this.parents = [];
-  this.root = this;  
 }
 
 /*
@@ -33,13 +31,16 @@ function Graph(id) {
 */
 Graph.prototype.resolve = function resolve(visitor) {
 
-  var graph = this;
+  // code smell ~ four guard clauses
+  
   var id = this.id;
+  var edges;
+  var length;
   
   visitor = visitor || this.visitor();
   
   if (!visitor.visited[id]) {
-
+  
     visitor.ids.push(id);
     
     if (visitor.visiting[id]) {
@@ -56,11 +57,14 @@ Graph.prototype.resolve = function resolve(visitor) {
   
   // descend if didn't call done() 
   if (!visitor.exit) {
-    for (var i = 0; i < this.edges.length; ++i) {
-      this.edges[i].resolve(visitor);
+    edges = this.edges;
+    length = edges.length;
+    for (var i = 0; i < length; ++i) {
+      edges[i].resolve(visitor);
     }
   }
   
+  // code smell ~ after clause
   // post-processing
   if (typeof visitor.after == 'function') {
     visitor.after(this);
@@ -98,28 +102,6 @@ Graph.prototype.visitor = function visitor(fn) {
   };
 };
 
-// notes for possible resolve improvements:
-/*
-    {
-      ...
-      after: fn(fn) {
-        this.postprocess || (this.postprocess = []);
-        this.postprocess.push(fn);
-    }
-    
-    // assignment:
-    
-    visitor.after(fn);
-    
-    // then in resolve():
-    
-    if (visitor.postprocess) {
-      for (var i = 0; i < visitor.postprocess.length; ++i) {
-        visitor.postprocess[i](graph);
-      }
-    }
-
-*/
 
 /*
  * return index of child edge with matching id
@@ -149,19 +131,7 @@ Graph.prototype.attach = function attach(edge) {
   
     this.edges.push(edge);
     
-    if (edge.indexOf(this.id) === -1) {
-      edge.parents.push(this.id);
-    }
-    
-    var visitor = edge.visitor(function (child) {
-      // *this* refers to the visitor instance
-      child.root = this.root;
-    });
-    
-    // assigns a nonce property on visitor that we can use inside the processing function
-    visitor.root = this.root;
-    
-    edge.resolve(visitor);
+    edge.resolve();
     
     return edge;
   }
@@ -173,52 +143,14 @@ Graph.prototype.attach = function attach(edge) {
  * detach child with matching id
  */
 Graph.prototype.detach = function detach(id) {
-
-  var edge = false;
   
   var index = this.indexOf(id);
 
   if (index !== -1) {
-  
-    edge = this.edges.splice(index, 1)[0];
-    
-    // visit from current edge - don't need the whole graph.
-    // 'child' means any descendant in this edge's subgraph.
-    var visitor = edge.visitor(function (child) {
-    
-      // http://davidwalsh.name/javascript-clone-array
-      var parents = child.parents;
-      var copy = parents.slice(0);
-      
-      // IE6-8 require if-loop rather than array#indexOf() or iteration methods
-      for (var i = 0; i < parents.length; i++) {
-      
-        // *this* is the visitor whose id is the starting graph element id
-        // if the child has this visitor's graph as a parent, remove it from this child
-        if (this.id === parents[i].id) {        
-          copy = parents.splice(i, 1);
-        }
-        
-        // if only one parent left, point the root property to it
-        if (copy.length === 1) {
-          
-          child.root = edge;
-
-          // if child is the edge, it's been detached entirely (no parents)
-          if (child === edge) {
-            copy = [];
-            break;
-          }        
-        }
-      }
-      
-      child.parents = copy;
-    });
-    
-    edge.resolve(visitor);
+    return this.edges.splice(index, 1)[0];
   }
   
-  return edge;
+  return false;
 };
 
 /*
@@ -387,7 +319,6 @@ Graph.prototype.list = function list() {
   return this.resolve(visitor).results.join('');
 };
 
-// [14 DEC 2013] NEXT UP ~
 /*
  * returns the visitor's results array, depth first
  */

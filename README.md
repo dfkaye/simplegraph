@@ -63,7 +63,7 @@ what makes it simple?
 
 There is no concept of a *node* or node lookup map.  Rather, every object on a 
 graph is a graph instance whose *edges* are other graph instances.  Nothing 
-special, but traversal is required by almost every method.  Making *that* simple 
+special, but traversal is required by several methods, and making *that* simple 
 has been a challenge.
    
 structure
@@ -80,15 +80,17 @@ That returns an object with the following fields:
 
     main.id      // string 'main'
     main.edges   // array of graphs []
-    main.parents // array of graphs []
-    main.root    // this graph by default; reassigned by attach/detach
     
 These are the only constructor-created properties. 
 
-No graph data element stored in a graph element - __final answer__
+No graph data element is stored in a graph element - __final answer__
 
 traversal
 ---------
+
+Some graph child methods use procedural code (for-loops) rather than iterator 
+functions in order to support IE6-8 -- and execute a little faster (iterators 
+run just under an order of magnitude slower).
 
 The *resolve* (traversal) methods use visitor iteration methods internally.  The 
 pattern looks like this:
@@ -98,15 +100,6 @@ pattern looks like this:
         iteratorFunction
       and/or 
         visitor.postProcessFunction
-
-Initially the graph child methods used procedural code (for-loops) rather than 
-iterator functions in order to support IE6-8 -- and execute a little faster 
-(iterators run just under an order of magnitude slower).  
-
-Once I added the concept of a graph *root* [16 DEC 2103], that required 
-traversal on attach() (to prevent cycles eagerly) and detach() (to break up root 
-and parent correctly).
-
 
 __resolve(visitor?)__
 
@@ -119,6 +112,7 @@ you manage results, terminate processing at specified points, and so on.
 __If the `resolve()` method detects a cycle, it will throw an error.__
 
 If no cycle or other error occurs, `resolve()` returns a `visitor` object.
+
 
 __[ API/DOC IN PROGRESS ]__
 
@@ -136,24 +130,27 @@ to edges. The function takes a graph param representing a child or edge.
 The visitor *object* is used internally by the `resolve()` method for tracking 
 visited subgraphs, and for throwing an `error` if a cycle is detected.
 
+
 __[ API/DOC IN PROGRESS ]__
   
-The following snippet from the `attach()` method demonstrates a visitor usage. 
-It assigns every descendant element's root to the the starting graph element's 
-root:
+  
+The following snippet from the `remove(id)` method demonstrates a visitor usage. 
+It calls `detach` internally and pushes detached edges to the visitor's results 
+array:
 
-    var visitor = edge.visitor(function (child) {
-      // *this* refers to the visitor instance
-      child.root = this.root;
+    var visitor = this.visitor(function(edge) {
+      // uses closure on id param
+      if (edge.detach(id)) {
+        // *this* is the visitor
+        this.results.push(edge);
+      }
     });
     
-    // assigns a nonce property on visitor that we can use inside the processing 
-    // function
-    visitor.root = this.root;
-    
-    edge.resolve(visitor);
+    return this.resolve(visitor);
 
+    
 __[ API/DOC IN PROGRESS ]__
+
 
     // inspect visitor
     id: graph.id  // in this case it will be 'main'
@@ -176,9 +173,7 @@ methods
 
 __attach(graph)__
 
-`attach()` accepts a graph object as a child in the current graph. The child's 
-`root` is set to the graph's `root`. The graph's id is pushed to the child's 
-`parents` array.
+`attach()` accepts a graph object as a child in the current graph.
 
 If adding a graph that is __not__ already a child, `attach()` returns the added 
 child; else it returns __false__.
@@ -193,14 +188,10 @@ child; else it returns __false__.
     main.attach(a); // again
     // => false
     
-    a.root
-    // => main
     
-    a.parents[0] 
-    // => 'main'
-    
-The `attach()` method uses `resolve()` internally, which throws an error if a 
-cycle is detected. __To avoid cycles, always use `attach()` to modify the graph.__
+WARNING: The `attach()` method uses `resolve()` internally, which throws an 
+error if a cycle is detected. __To avoid cycles, always use `attach()` to modify the graph.__
+
 
 __detach(id)__
 
@@ -217,16 +208,6 @@ set to itself if the `parents` array is empty.
     
     main.detach('a'); // again
     // => false
-    
-    a.root
-    // => a
-    
-    a.parents[0]
-    // => undefined
-    
-WARNING: the `detach()` method uses `resolve()` internally, which throws an 
-error if a cycle is detected. To avoid cycles, always use `attach()` to modify 
-the graph.
 
 __indexOf(id)__
 
@@ -272,10 +253,6 @@ or migrations as necessary.
     visitor.results
     // => ['a', 'b']
     
-WARNING: the `remove()` method uses `resolve()` internally, which throws an 
-error if a cycle is detected. To avoid cycles, always use `attach()` to modify 
-the graph.
-
 __dependants(id) - aka 'fan-in'__
 
 `dependants()` accepts a string id for an item in the graph, and finds all 
@@ -415,20 +392,13 @@ which will run both of these:
     node ./test/simple-test.js
     node ./test/big-fixture-test.js
 
-WARNING: The `big-fixture-test` generates over a million graph items, which on 
-some systems is ridiculously slow (*15+ seconds!*). It's done in a blocking 
-manner on node.js rather than with `process.nextTick` - maybe I'll try that 
-later.  Anyway, big-fixture test is *not* bundled with the browser suite.
-
-Avoid big-fixture on node.js by running just the simple test:
+The `big-fixture-test` generates over a million graph items.  Avoid it by 
+running just the simple test:
 
     npm run simple
 
 rawgithub test page
 -------------------
-
-Ran into problems with the Testling service which had become unreliable (now 
-fixed) due to json API changes.
 
 In order to verify that the test suite runs locally or on rawgithub - and rather 
 than re-create the tests using jasmine, QUnit, or what-have-you, I now [use 
@@ -437,7 +407,7 @@ test suite file itself.  This pulls in the `tape` module and its dependencies
 (there are many many many of them), plus the graph module and tests:
 
     cd ./simplegraph
-    browserify ./test/simple-test.js -o ./browser-test/bundle.js
+    browserify ./test/suite.js -o ./browser-test/bundle.js
     
 Use the alias for that command as defined in package.json:
 
@@ -455,6 +425,13 @@ __View the generated test-bundle page on
 TODO
 ----
 
++ <del>speed up big-fixture setup using edges directly rather than attach()</del>
++ __recursion is a huge problem with this implementation ~ using it in attach() 
+    for root and parent checking has doubled creation times for large graphs ~ 
+    look to convert visitor recursion to iteration instead__ 
+    (see http://blog.moertel.com/posts/2013-06-03-recursion-to-iteration-3.html)
++ refactor resolve() to take a properties object, a visit function, maybe an 
+    after function, to reduce verbose visitor creation gack everywhere
 + _add code snippets for each method in the README (especially for visitor)_
 + _split up the tests into smaller method-specific files_
 + <del>_add topological sort_</del>
@@ -467,6 +444,7 @@ __constructor__
 + unique ID constraint at Graph(id) ? (requires a map of ids on graph fn, or 
     another closure)
 
++ <del>remove `root` and `parent` support - gad, what a mistake</del>
 + <del>support a `root` field so we can `sort()` from the top by default</del>
 + <del>call resolve() on each attach() call for early cycle detection - needed 
     for root/parents</del>
