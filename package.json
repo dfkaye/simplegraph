@@ -24,10 +24,11 @@
   "scripts": {
     "test": "node ./test/suite.js",
     "simple": "node ./test/simple-test.js",
-    "bundle" : "browserify ./test/suite.js -o ./browser-test/bundle.js"
+    "bundle" : "browserify ./test/suite.js -o ./browser-test/suite.js",
+    "testling-bundle" : "browserify ./test/simple-test.js -o ./browser-test/testling.js"
   },  
   "testling": {
-    "html": "./browser-test/suite.html",
+    "html": "./browser-test/testling.html",
     "browsers" : [
       "ie/6..latest",
       "chrome/latest",
