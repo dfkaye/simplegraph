@@ -1,18 +1,18 @@
 // simple-test
 var test = require('tape');
-var graph = require('../simplegraph');
+var simplegraph = require('../simplegraph');
 
 /*** FIXTURES ***/
 
 function fixture(id) {
 
-  var main = graph(id);
+  var main = simplegraph(id);
   
-  var a = graph('a');
-  var b = graph('b');
-  var c = graph('c');
-  var d = graph('d');
-  var e = graph('e');
+  var a = simplegraph('a');
+  var b = simplegraph('b');
+  var c = simplegraph('c');
+  var d = simplegraph('d');
+  var e = simplegraph('e');
 
   a.attach(b);    // a depends on b
   a.attach(c);   // a depends on c
@@ -45,16 +45,16 @@ function bdbCycle(main) {
 
 test('smoke test', function (t) {
 
-  t.equal(typeof graph, 'function');
+  t.equal(typeof simplegraph, 'function');
   
   t.end();
 });
 
 test('instance', function (t) {
   
-  var main = graph('main');
+  var main = simplegraph('main');
 
-  t.ok(main instanceof graph, 'main instanceof graph');
+  t.ok(main instanceof simplegraph, 'main instanceof simplegraph');
   t.ok(main.id === 'main', 'main.id');
   t.ok(main.edges, 'main.edges');
   
@@ -65,7 +65,7 @@ test('instance', function (t) {
   t.equal(typeof main.detach, 'function', 'detach');
   
   t.equal(typeof main.remove, 'function', 'remove');
-  t.equal(typeof main.dependants, 'function', 'dependants');
+  t.equal(typeof main.parents, 'function', 'parents');
   t.equal(typeof main.subgraph, 'function', 'subgraph');
   t.equal(typeof main.find, 'function', 'find');
   t.equal(typeof main.size, 'function', 'size');
@@ -79,10 +79,10 @@ test('instance', function (t) {
 test('constructor throws on empty string id', function (t) {
 
   function emptyString() {
-    graph('');
+    simplegraph('');
   }
   
-  t.throws(emptyString, 'emptyString', 'graph requires id param as string');
+  t.throws(emptyString, 'emptyString', 'simplegraph requires id param as string');
 
   t.end();
 });
@@ -90,10 +90,10 @@ test('constructor throws on empty string id', function (t) {
 test('constructor throws on empty argument', function (t) {
   
   function empty() {
-    graph();
+    simplegraph();
   }
   
-  t.throws(empty, 'empty', 'graph requires id param as string');
+  t.throws(empty, 'empty', 'simplegraph requires id param as string');
  
   t.end();
 });
@@ -101,8 +101,8 @@ test('constructor throws on empty argument', function (t) {
 test('attach, indexOf, and detach child graph', function (t) {
   
   var id = 'b';
-  var a = graph('a');
-  var b = graph(id);
+  var a = simplegraph('a');
+  var b = simplegraph(id);
   var child;
   
   t.equal(a.indexOf(id), -1, 'no b');
@@ -122,9 +122,9 @@ test('attach, indexOf, and detach child graph', function (t) {
 test('attach and detach subgraph', function (t) {
 
   var ids = ['main', 'a', 'b'];
-  var main = graph(ids[0]);
-  var a = graph(ids[1]);
-  var b = graph(ids[2]);
+  var main = simplegraph(ids[0]);
+  var a = simplegraph(ids[1]);
+  var b = simplegraph(ids[2]);
   var visitor;
   
   a.attach(b);
@@ -149,7 +149,7 @@ test('attach and detach subgraph', function (t) {
 test('attach() with cycle throws Error(): main -> main', function (t) {
 
   var msg = 'main -> main';
-  var main = graph('main');
+  var main = simplegraph('main');
   var visitor;
 
   function exec() {
@@ -176,7 +176,7 @@ test('visitor instance', function (t) {
 
 test('resolve', function (t) {
     
-  var main = graph('main')
+  var main = simplegraph('main')
   var visitor = main.resolve()
       
   t.equal(visitor.ids.length, 1, 'should visit 1')
@@ -189,8 +189,8 @@ test('resolve with visit callback', function (t) {
   var main = fixture('main');
   var visitor;
   
-  function visit(graph) {
-    if (graph.id === main.id) {
+  function visit(edge) {
+    if (edge.id === main.id) {
       visitor.count++;
     }
   }
@@ -214,8 +214,8 @@ test('done() halts resolve() processing', function (t) {
   var main = fixture('main');
   var visitor;
   
-  function visit(graph) {
-    if (graph.id === main.id) {      
+  function visit(edge) {
+    if (edge.id === main.id) {      
       visitor.done();
     }
   }
@@ -231,9 +231,9 @@ test('done() halts resolve() processing', function (t) {
 test('resolve all subgraphs in graph', function (t) {
 
   var ids = ['main', 'a', 'b'];
-  var main = graph(ids[0]);
-  var a = graph(ids[1]);
-  var b = graph(ids[2]);
+  var main = simplegraph(ids[0]);
+  var a = simplegraph(ids[1]);
+  var b = simplegraph(ids[2]);
   var visitor;
   
   a.attach(b);
@@ -264,7 +264,7 @@ test('resolve each subgraph', function (t) {
 test('resolve cycle throws Error(): main -> main', function (t) {
 
   var msg = 'main -> main';
-  var main = graph('main');
+  var main = simplegraph('main');
   var visitor;
 
   function exec() {
@@ -324,24 +324,24 @@ test('remove with cycle', function (t) {
   t.end();
 });
 
-test('dependants finds all graphs that depend on specified graph id', function (t) {
+test('parents finds all graphs that depend on specified graph id', function (t) {
 
   var main = fixture('main');
   var id = 'c';
-  var visitor = main.dependants(id);
+  var visitor = main.parents(id);
   
   t.equal(visitor.results.length, 3, 'should find 3 graphs');
   
   t.end();
 })
 
-test('dependants with cycle', function (t) {
+test('parents with cycle', function (t) {
 
   var main = fixture('main');
   var visitor;
 
   function exec() {
-    visitor = main.dependants('b');
+    visitor = main.parents('b');
   }
   
   bdbCycle(main);
@@ -360,23 +360,23 @@ test('subgraph finds all graphs under the specified graph id', function (t) {
   var visitor = main.subgraph();
   
   t.equal(visitor.results.length, size, 'should find ' + size + ' graphs') ;
-  
+
   t.end();
 })
 
-test('size returns count of subgraph items plus graph in visitor.results', function (t) {
+test('size of leaf should be 1', function (t) {
 
-  var names = ['a', 'b', 'c', 'd', 'e'];
-
-  t.equal(fixture('main').size(), names.length + 1, 'should find 6 graphs');
+  t.equal(simplegraph('leaf').size(), 1, 'should be 1');
   
   t.end();
 });
 
-test('size of leaf should be 1', function (t) {
+test('size returns count of subgraph items plus graph in visitor.results', function (t) {
 
-  t.equal(graph('leaf').size(), 1, 'should be 1');
-  
+  var names = ['main', 'a', 'b', 'c', 'd', 'e'];
+
+  t.equal(fixture('main').size(), names.length, 'should find 6 graphs');
+
   t.end();
 });
 
@@ -473,9 +473,6 @@ test('print list', function (t) {
   t.end();
 });
 
-
-// sort
-
 test('sort fixture', function (t) {
 
   t.plan(1)
@@ -498,26 +495,15 @@ test('sort fixture subgraph', function (t) {
   t.equal(results.join(' '), expected.join(' ')); 
 });
 
-// test('sort by root', function (t) {
-  // t.plan(1);
-  
-  // var main = fixture('main');
-  // var expected = ['e','d','c','b','a','main'];
-  // var c = main.find('c');
-  // var results = c.root.sort();
-  
-  // t.equal(results.join(' '), expected.join(' '));   
-// });
-
 test('sort b-fixture', function (t) {
 
   t.plan(1)
   
-  var a = graph('a')
-  var b = graph('b')
-  var c = graph('c')
-  var d = graph('d')
-  var e = graph('e')
+  var a = simplegraph('a')
+  var b = simplegraph('b')
+  var c = simplegraph('c')
+  var d = simplegraph('d')
+  var e = simplegraph('e')
   
   d.attach(c)
   d.attach(e)
@@ -539,14 +525,14 @@ test('sort complex fixture', function (t) {
 
   t.plan(1)
   
-  var fixture = graph('fixture');
+  var fixture = simplegraph('fixture');
   var ids = 'zyxwvutsrqponm'.split('');
   var edges = {};
   var expected = [];
   
   for (var i = 0, key; i < ids.length; ++i) {
     key = ids[i];
-    edges[key] = graph(key);
+    edges[key] = simplegraph(key);
   }
   
   // build out the connections

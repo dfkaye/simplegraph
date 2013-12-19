@@ -41,12 +41,11 @@ use
 
 node.js
 
-    var graph = require('../simplegraph');
+    var simplegraph = require('../simplegraph');
 
 browser
 
-    // still being worked out but you can try this
-    window.Graph
+    window.simplegraph
     
     
 justify
@@ -73,8 +72,8 @@ A graph contains an array of `edges` (other graphs). The required constructor
 argument is a string `id`.  The constructor can be called with or without the 
 `new` keyword. 
 
-    var main = graph('main');
-    var main = new graph('main');
+    var main = simplegraph('main');
+    var main = new simplegraph('main');
 
 That returns an object with the following fields:
 
@@ -95,7 +94,7 @@ run just under an order of magnitude slower).
 The *resolve* (traversal) methods use visitor iteration methods internally.  The 
 pattern looks like this:
 
-    graph.resolve
+    graphInstance.resolve
       visitor
         iteratorFunction
       and/or 
@@ -178,9 +177,9 @@ __attach(graph)__
 If adding a graph that is __not__ already a child, `attach()` returns the added 
 child; else it returns __false__.
 
-    var main = graph('main')
+    var main = simplegraph('main')
     
-    var a = graph('a');
+    var a = simplegraph('a');
     
     main.attach(a);
     // => a
@@ -253,18 +252,18 @@ or migrations as necessary.
     visitor.results
     // => ['a', 'b']
     
-__dependants(id) - aka 'fan-in'__
+__parents(id) - aka 'fan-in'__
 
-`dependants()` accepts a string id for an item in the graph, and finds all 
+`parents()` accepts a string id for an item in the graph, and finds all 
 graphs in subgraph that depend on graph with given id. Found graphs are returned 
 in the `visitor.results` array.
 
-`dependants()` always returns a `visitor` object with a `visitor.results' array.
+`parents()` always returns a `visitor` object with a `visitor.results' array.
 
     // main -> a -> b -> c -> d
     // a -> c -> e
 
-    var visitor = main.dependants('c');
+    var visitor = main.parents('c');
     visitor.results
     // => ['a', 'b']
     
@@ -340,8 +339,8 @@ found from the current graph being 'sorted' in depth-first order.
 Call sort() on any graph element to retrieve the topo-sort for that element's 
 subgraph.
 
-    var main = graph('main');
-    var c = graph('c');
+    var main = simplegraph('main');
+    var c = simplegraph('c');
     main.attach(c);
     
     // etc.
@@ -408,10 +407,14 @@ __View the generated test-bundle page on
 TODO
 ----
 
-+ <del>speed up big-fixture setup using edges directly rather than attach()</del>
++ <del>rename returned graph function to `simplegraph`</del>
++ <del>massive speed up of big-fixture setup using edges directly rather than 
+    attach() -- which means...</del>
 + __recursion is a huge problem with this implementation ~ using it in attach() 
     for root and parent checking has doubled creation times for large graphs ~ 
-    look to convert visitor recursion to iteration instead__ 
+    removing attach() from big fixture setup has cut creation time from 8 or 9
+    seconds down to 0.6 (!) ~ using new inside big fixture reduces time by 
+    another 100ms ~ look to convert visitor recursion to iteration instead__ 
     (see http://blog.moertel.com/posts/2013-06-03-recursion-to-iteration-3.html)
 + refactor resolve() to take a properties object, a visit function, maybe an 
     after function, to reduce verbose visitor creation gack everywhere
@@ -420,14 +423,14 @@ TODO
 + <del>_add topological sort_</del>
 + add bulk attach capability
 + add serialize() (and deserialize ?) support *(maybe)*
-+ rename `dependants()` - items that depend on certain node *(maybe)*
++ <del>rename `dependants()` (items that depend on certain node) as `parents`</del>
 
 __constructor__
 
 + unique ID constraint at Graph(id) ? (requires a map of ids on graph fn, or 
-    another closure)
+    another closure) -- maybe a second param for the attach() method
 
-+ <del>remove `root` and `parent` support - gad, what a mistake</del>
++ <del>remove `root` and `parent` support - *gad, what a mistake*</del>
 + <del>support a `root` field so we can `sort()` from the top by default</del>
 + <del>call resolve() on each attach() call for early cycle detection - needed 
     for root/parents</del>

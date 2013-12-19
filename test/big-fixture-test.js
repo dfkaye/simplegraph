@@ -1,6 +1,6 @@
 // big-fixture-test
 var test = require('tape')
-var graph = require('../simplegraph')
+var simplegraph = require('../simplegraph')
 
 /*** TESTS ***/
 
@@ -12,7 +12,7 @@ test('BIG FIXTURE SETUP creates over a million elements', function(t) {
   
   count = 0;
   //name = '' + ++count;
-  fixture = graph('' + ++count);
+  fixture = simplegraph('' + ++count);
   
   var child;
   var time = (new Date()).getTime();
@@ -20,14 +20,14 @@ test('BIG FIXTURE SETUP creates over a million elements', function(t) {
   for (var i = 0; i < 1500; i++) {
   
     //name = '' + ++count;
-    child = graph('' + ++count);
+    child = new simplegraph('' + ++count);
     
     for (var j = i + 1; j >= 0; --j) {
     
       //name = '' + ++count;
-      //child.attach(graph(name))
+      //child.attach(simplegraph(name))
       //if (child.indexOf(name) === -1) {
-        child.edges.push(graph('' + ++count))
+        child.edges.push(new simplegraph('' + ++count))
       //}
     }
     
@@ -83,4 +83,15 @@ test('big fixture find last last created element by name', function(t) {
   
   t.equal(fixture.find(id).id, id, 'should find last element [' + id + ']')
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
+});
+
+test('big fixture subgraph', function (t) {
+
+  t.plan(1);
+
+  
+  var time = (new Date()).getTime();
+  var visitor = fixture.subgraph();
+  t.equal(visitor.ids.length, count, 'should find ' + count + ' elements')
+  console.log((((new Date()).getTime() - time) / 1000) + ' seconds to count ' + count)
 });

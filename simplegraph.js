@@ -1,21 +1,21 @@
 
 // wrapped so we could try it in firebug/browser
 if (typeof module != 'undefined' && module.exports) {
-  module.exports = Graph;
+  module.exports = simplegraph;
 }
 
 /*
- * Graph constructor (new is optional)
+ * @constructor simplegraph (new is optional)
  * param string id - required
  */
-function Graph(id) {
+function simplegraph(id) {
 
-  if (!(this instanceof Graph)) {
-    return new Graph(id)
+  if (!(this instanceof simplegraph)) {
+    return new simplegraph(id)
   }
   
   if (!id || typeof id != 'string') {
-    throw new Error('Graph() requires non-empty string id argument.')
+    throw new Error('simplegraph() requires non-empty string id argument.')
   }
   
   this.id = id;
@@ -29,10 +29,11 @@ function Graph(id) {
 *   method.
 * @returns visitor
 */
-Graph.prototype.resolve = function resolve(visitor) {
+simplegraph.prototype.resolve = function resolve(visitor) {
 
-  // code smell ~ four guard clauses
-  
+  // code smell ~ four guard clauses + an error clause
+  // make this more composable so we avoid visitor?
+
   var id = this.id;
   var edges;
   var length;
@@ -60,7 +61,11 @@ Graph.prototype.resolve = function resolve(visitor) {
     edges = this.edges;
     length = edges.length;
     for (var i = 0; i < length; ++i) {
+    
+      // THIS IS THE PROBLEM -
+      // SHOULD CALL VISITOR.VISIT + AFTER
       edges[i].resolve(visitor);
+      //visitor.visit(edges[i]);;
     }
   }
   
@@ -84,7 +89,7 @@ Graph.prototype.resolve = function resolve(visitor) {
  * - not sure if visitor should be an external object with visitor.visit(graph) api,
  * - or should continue with graph.resolve(visitor)...
  */
-Graph.prototype.visitor = function visitor(fn) {
+simplegraph.prototype.visitor = function visitor(fn) {
 
   var graph = this;
 
@@ -106,7 +111,7 @@ Graph.prototype.visitor = function visitor(fn) {
 /*
  * return index of child edge with matching id
  */
-Graph.prototype.indexOf = function indexOf(id) {
+simplegraph.prototype.indexOf = function indexOf(id) {
 
   var edges = this.edges;
   var length = edges.length;
@@ -120,12 +125,11 @@ Graph.prototype.indexOf = function indexOf(id) {
   return -1;
 };
 
-// TRAVERSAL METHODS WITH RESOLVE AND VISITOR
 
 /*
  * attach child to current graph
  */
-Graph.prototype.attach = function attach(edge) {
+simplegraph.prototype.attach = function attach(edge) {
 
   if (this.indexOf(edge.id) === -1) {
   
@@ -142,7 +146,7 @@ Graph.prototype.attach = function attach(edge) {
 /*
  * detach child with matching id
  */
-Graph.prototype.detach = function detach(id) {
+simplegraph.prototype.detach = function detach(id) {
   
   var index = this.indexOf(id);
 
@@ -153,12 +157,15 @@ Graph.prototype.detach = function detach(id) {
   return false;
 };
 
+
+// TRAVERSAL METHODS WITH RESOLVE AND VISITOR
+
 /*
 * @method remove detaches all occurrences of subgraph from the graph and its descendants.
 * param string id - required id of the subgraph to be detachd
 * returns an array of graphs from which the target has been detachd.
 */
-Graph.prototype.remove = function remove(id) {
+simplegraph.prototype.remove = function remove(id) {
 
   var visitor = this.visitor(function(edge) {
     // uses closure on id param
@@ -172,12 +179,12 @@ Graph.prototype.remove = function remove(id) {
 };
 
 /*
- * @method dependants finds all graphs in subgraph that depend on graph with given id.
+ * @method parents finds all graphs in subgraph that depend on graph with given id.
  * @param string id - required id for the target graph.
  * @returns a visitor with the results field as array of ids of graphs that depend on the 
  *  target subgraph.
  */
-Graph.prototype.dependants = function dependants(id) {
+simplegraph.prototype.parents = function parents(id) {
 
   var visitor = this.visitor(function(edge) {
     // *this* is the visitor
@@ -195,7 +202,7 @@ Graph.prototype.dependants = function dependants(id) {
  * @returns a visitor with the results field as array of ids of graphs under the target 
  *  subgraph.
  */
-Graph.prototype.subgraph = function subgraph() {
+simplegraph.prototype.subgraph = function subgraph() {
 
   var visitor = this.visitor(function(edge) {
     // *this* is the visitor
@@ -212,8 +219,8 @@ Graph.prototype.subgraph = function subgraph() {
  * @method size counts all graphs in subgraph, and includes the current graph.
  * @returns the number of results.
  */
-Graph.prototype.size = function size() {
-  return this.subgraph().results.length + 1;
+simplegraph.prototype.size = function size() {
+  return this.resolve().ids.length;
 };
 
 /*
@@ -221,7 +228,7 @@ Graph.prototype.size = function size() {
  *  Uses the visitor in order to avoid throwing errors.  First match terminates search.
  * @returns first matching child or descendant graph
  */
-Graph.prototype.find = function find(id) {
+simplegraph.prototype.find = function find(id) {
 
   var child = false;
   
@@ -236,7 +243,7 @@ Graph.prototype.find = function find(id) {
       
       // terminate the search in resolve() on this visitor
       // *this* is the visitor
-      this.done(); 
+      this.done();
     }
   })
   
@@ -245,43 +252,12 @@ Graph.prototype.find = function find(id) {
   return child;
 };
 
-// recursive print, copied+modified from Processing to JavaScript
-// ch. 7 of Visualizing Data by Ben Fry, O'Reilly, 2007
-/*Graph.prototype.list = list;
-function list(depth) {
-  
-  var out = [];
-  
-  (typeof depth == 'number' && depth >= 0) || (depth = 0)
-  
-  for (var i = 0; i < depth; i++) {
-      out.push('  '); // console
-  }
-  
-  out.push(this.id); // console
-  
-  if (this.edges.length) {
-  
-    out.push(':\n');
-    
-    for (var i = 0; i < this.edges.length; i++) {
-      out.push(this.edges[i].list(depth + 1)); // ye olde recursion...
-    }
-
-  } else {
-    out.push('\n');
-  }
-  
-  return out.join('');
-}
-*/
-
 /*
  * @method list - alternate version of list iterator - shows deficiency of depth-first 
  *  traversal - uses the visitor.after() post-visit callback approach.
  * @returns results array of visited graphs
  */
-Graph.prototype.list = function list() {
+simplegraph.prototype.list = function list() {
 
   var visitor = this.visitor();
 
@@ -314,7 +290,7 @@ Graph.prototype.list = function list() {
   visitor.after = function (edge) {
     // *this* is the visitor
     this.depth -= this.INDENT;
-  }
+  };
   
   return this.resolve(visitor).results.join('');
 };
@@ -322,7 +298,7 @@ Graph.prototype.list = function list() {
 /*
  * returns the visitor's results array, depth first
  */
-Graph.prototype.sort = function sort() {
+simplegraph.prototype.sort = function sort() {
 
   var visitor = this.visitor();
   
