@@ -88,8 +88,7 @@ test('big fixture find last last created element by name', function(t) {
 test('big fixture subgraph', function (t) {
 
   t.plan(1);
-
-  
+ 
   var time = (new Date()).getTime();
   var visitor = fixture.subgraph();
   t.equal(visitor.ids.length, count, 'should find ' + count + ' elements')

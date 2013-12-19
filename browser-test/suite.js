@@ -8955,7 +8955,18 @@ simplegraph.prototype.subgraph = function subgraph() {
  * @returns the number of results.
  */
 simplegraph.prototype.size = function size() {
-  return this.resolve().ids.length;
+
+  // var size = 1;
+  // var edges = this.edges; //(0.027s to size 2001001 items using this.edges)
+  // var i = edges.length;
+  
+  // while (i--) {
+    // size += edges[i].size();
+  // }
+  
+  // return size; //(0.025s to size 2001001 items using edges)
+  
+  return this.resolve().ids.length; //(1.36s to size 2001001 items)
 };
 
 /*
@@ -9061,23 +9072,23 @@ var simplegraph = require('../simplegraph')
 
 var count, fixture, last;
 
-test('BIG FIXTURE SETUP creates over a million elements', function(t) {
+test('BIG FIXTURE SETUP creates over 2 million elements', function(t) {
 
   t.plan(1);
   
   count = 0;
   //name = '' + ++count;
-  fixture = simplegraph('' + ++count);
+  fixture = new simplegraph('' + ++count);
   
   var child;
   var time = (new Date()).getTime();
   
-  for (var i = 0; i < 1500; i++) {
+  for (var i = 0; i < 2000; i++) {
   
     //name = '' + ++count;
     child = new simplegraph('' + ++count);
     
-    for (var j = i + 1; j >= 0; --j) {
+    for (var j = i ; j > 0; --j) {
     
       //name = '' + ++count;
       //child.attach(simplegraph(name))
@@ -9094,7 +9105,7 @@ test('BIG FIXTURE SETUP creates over a million elements', function(t) {
   
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to build ' + count + ' items')
   
-  t.ok(count > 1000000, 'should be over a million elements');
+  t.ok(count === 2001001, 'should be over 2 million elements');
 });
   
 test('big fixture size', function(t) {
@@ -9143,8 +9154,7 @@ test('big fixture find last last created element by name', function(t) {
 test('big fixture subgraph', function (t) {
 
   t.plan(1);
-
-  
+ 
   var time = (new Date()).getTime();
   var visitor = fixture.subgraph();
   t.equal(visitor.ids.length, count, 'should find ' + count + ' elements')

@@ -8955,7 +8955,18 @@ simplegraph.prototype.subgraph = function subgraph() {
  * @returns the number of results.
  */
 simplegraph.prototype.size = function size() {
-  return this.resolve().ids.length;
+
+  // var size = 1;
+  // var edges = this.edges; //(0.027s to size 2001001 items using this.edges)
+  // var i = edges.length;
+  
+  // while (i--) {
+    // size += edges[i].size();
+  // }
+  
+  // return size; //(0.025s to size 2001001 items using edges)
+  
+  return this.resolve().ids.length; //(1.36s to size 2001001 items)
 };
 
 /*
