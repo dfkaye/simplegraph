@@ -374,7 +374,8 @@ which will run both of these:
     node ./test/simple-test.js
     node ./test/big-fixture-test.js
 
-The `big-fixture-test` generates over a million graph items.  Avoid it by 
+The `big-fixture-test` generates over *2 million* graph items (currently 
+2,001,001 items).  Though it's optimized to run fast, you can avoid it by 
 running just the simple test:
 
     npm run simple
@@ -403,32 +404,38 @@ __View the generated test-bundle page on
 <a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
    target='_new' title='opens in new tab or window'>rawgithub</a>.__
    
-   
 TODO
 ----
 
-+ <del>rename returned graph function to `simplegraph`</del>
-+ <del>massive speed up of big-fixture setup using edges directly rather than 
-    attach() -- which means...</del>
-+ __recursion is a huge problem with this implementation ~ using it in attach() 
-    for root and parent checking has doubled creation times for large graphs ~ 
-    removing attach() from big fixture setup has cut creation time from 8 or 9
-    seconds down to 0.6 (!) ~ using new inside big fixture reduces time by 
-    another 100ms ~ look to convert visitor recursion to iteration instead__ 
++ __recursion by resolve/visitor is a huge problem with this implementation ~ 
+    using it in attach() for root and parent checking has doubled creation times 
+    for large graphs (15 seconds for 1 million items) ~ removing attach() from 
+    big fixture setup altogether cuts creation time from 8 or 9 seconds down to 
+    0.6 (!) ~ using new inside big fixture reduces time by another 100ms ~ using 
+    it in size() takes 50x longer than procedural looping ~ look to convert 
+    visitor recursion to iteration instead__ 
     (see http://blog.moertel.com/posts/2013-06-03-recursion-to-iteration-3.html)
 + refactor resolve() to take a properties object, a visit function, maybe an 
     after function, to reduce verbose visitor creation gack everywhere
++ add bulk attach capability ~ possibly a `load` method that runs attachment on 
+    a (dare I say it) separate process or worker or iframe... or maybe an excuse 
+    to try promises or streams...
++ add serialize() (and deserialize ?) support as part of that *(maybe)*    
 + _add code snippets for each method in the README (especially for visitor)_
 + _split up the tests into smaller method-specific files_
++ get off testling ~ testling is unreliable ~ shouldn't have to keep fixing
+    their car, just rent another one
++ get off of tape, go with jasmine ~ travis works with jasmine-node
 + <del>_add topological sort_</del>
-+ add bulk attach capability
-+ add serialize() (and deserialize ?) support *(maybe)*
++ <del>rename `require`'d graph function to `simplegraph`</del>
++ <del>massive speed up of big-fixture setup using edges directly rather than 
+    attach()</del>
 + <del>rename `dependants()` (items that depend on certain node) as `parents`</del>
 
 __constructor__
 
 + unique ID constraint at Graph(id) ? (requires a map of ids on graph fn, or 
-    another closure) -- maybe a second param for the attach() method
+    another closure) -- __maybe a second param for the attach() method__
 
 + <del>remove `root` and `parent` support - *gad, what a mistake*</del>
 + <del>support a `root` field so we can `sort()` from the top by default</del>

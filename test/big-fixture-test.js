@@ -6,23 +6,23 @@ var simplegraph = require('../simplegraph')
 
 var count, fixture, last;
 
-test('BIG FIXTURE SETUP creates over a million elements', function(t) {
+test('BIG FIXTURE SETUP creates over 2 million elements', function(t) {
 
   t.plan(1);
   
   count = 0;
   //name = '' + ++count;
-  fixture = simplegraph('' + ++count);
+  fixture = new simplegraph('' + ++count);
   
   var child;
   var time = (new Date()).getTime();
   
-  for (var i = 0; i < 1500; i++) {
+  for (var i = 0; i < 2000; i++) {
   
     //name = '' + ++count;
     child = new simplegraph('' + ++count);
     
-    for (var j = i + 1; j >= 0; --j) {
+    for (var j = i ; j > 0; --j) {
     
       //name = '' + ++count;
       //child.attach(simplegraph(name))
@@ -39,7 +39,7 @@ test('BIG FIXTURE SETUP creates over a million elements', function(t) {
   
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to build ' + count + ' items')
   
-  t.ok(count > 1000000, 'should be over a million elements');
+  t.ok(count === 2001001, 'should be over 2 million elements');
 });
   
 test('big fixture size', function(t) {
