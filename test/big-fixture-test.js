@@ -63,7 +63,7 @@ test('big fixture find first child', function(t) {
   var id = '' + 2;
   var time = (new Date()).getTime();
   
-  t.equal(fixture.find(id).id, id, 'should find first child [' + id + ']')
+  t.equal(fixture.descendant(id).id, id, 'should find first child [' + id + ']')
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
 });
 
@@ -74,7 +74,7 @@ test('big fixture find random id', function(t) {
   var id = '' + Math.ceil(Math.sqrt(count) * Math.random(Math.sqrt(count)));
   var time = (new Date()).getTime();
   
-  t.equal(fixture.find(id).id, id, 'should find by random id [' + id + ']')
+  t.equal(fixture.descendant(id).id, id, 'should find by random id [' + id + ']')
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
 });
 
@@ -85,7 +85,7 @@ test('big fixture find last last created element by name', function(t) {
   var id = last; // re-using this from the setup
   var time = (new Date()).getTime();
   
-  t.equal(fixture.find(id).id, id, 'should find last element [' + id + ']')
+  t.equal(fixture.descendant(id).id, id, 'should find last element [' + id + ']')
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
 });
 

@@ -216,27 +216,29 @@ __indexOf(id)__
 
 __[ deprecated and removed ]__
 
-`indexOf()` accepts a string id for the target child of a graph. If a child is 
-found matching the id, the child is returned; else indexOf() returns __-1__.
+__has(id)__
+
+`has()` accepts a string id for the target child of a graph. If a child is 
+found matching the id, the child is returned; else `has()` returns __false__.
 
     main.attach(a);
     // => a
-    main.indexOf('a')
-    // 0
+    main.has('a')
+    // a
     
     main.detach('a');
     // => a
-    main.indexOf('a')
-    // -1
+    main.has('a')
+    // false
     
-__find(id)__
+__descendant(id)__
 
-`find()` accepts a string id for the target descendant of a graph. If a child or 
-descendant is found matching the id, the found target is returned; else `find()` 
-returns __false__.
+`descendant()` accepts a string id for the target descendant of a graph. If a 
+descendant is found matching the id, the found target is returned; else 
+`descendant()` returns __false__.
 
     // main -> a -> b -> c
-    main.find('c');
+    main.descendant('c');
     // => c
     
 __remove(id)__
@@ -354,7 +356,7 @@ subgraph.
     // either
     results = c.sort()
     // or
-    results = main.find('c').sort();
+    results = main.descendant('c').sort();
     
     
 tests
@@ -412,14 +414,20 @@ __View the generated test-bundle page on
 TODO
 ----
 
-+ __recursion by resolve/visitor is a huge problem with this implementation ~ 
-    using it in attach() for root and parent checking has doubled creation times 
-    for large graphs (15 seconds for 1 million items) ~ removing attach() from 
-    big fixture setup altogether cuts creation time from 8 or 9 seconds down to 
-    0.6 (!) ~ using new inside big fixture reduces time by another 100ms ~ using 
-    it in size() takes 50x longer than procedural looping ~ look to convert 
-    visitor recursion to iteration instead__ 
-    (see http://blog.moertel.com/posts/2013-06-03-recursion-to-iteration-3.html)
++ <del>__fix recursion performance on edges__
+  - change edges from array to a map
+  - remove `indexOf`
+  - add `has()` method
+  - __recursion by resolve/visitor is a huge problem with the array of edges 
+    implementation ~ using it in attach() for root and parent checking has 
+    doubled creation times for large graphs (15 seconds for 1 million items) ~ 
+    removing attach() from big fixture setup altogether cuts creation time from 
+    8 or 9 seconds down to 0.6 (!) ~ using `new` inside big fixture reduces time 
+    by another 100ms ~ using it in size() takes 50x longer than procedural 
+    looping ~ using an edge *map* reduces attach() and size() times enough that 
+    a big fixture with 2 million items is processed in 2-3s good enough for 
+    now__</del>
++ <del>rename find() to descendant()</del>
 + refactor resolve() to take a properties object, a visit function, maybe an 
     after function, to reduce verbose visitor creation gack everywhere
 + add bulk attach capability ~ possibly a `load` method that runs attachment on 
@@ -439,9 +447,8 @@ TODO
 
 __constructor__
 
-+ unique ID constraint at Graph(id) ? (requires a map of ids on graph fn, or 
-    another closure) -- __maybe a second param for the attach() method__
-
++ <del>unique ID constraint at simplegraph(id) ~ use a map of edge ids instead 
+    of an array</del>
 + <del>remove `root` and `parent` support - *gad, what a mistake*</del>
 + <del>support a `root` field so we can `sort()` from the top by default</del>
 + <del>call resolve() on each attach() call for early cycle detection - needed 

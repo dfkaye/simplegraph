@@ -273,11 +273,11 @@ simplegraph.prototype.size = function size() {
 };
 
 /*
- * @method find locates child or descendant with matching id in the graph or its subgraph.
+ * @method descendant locates child or descendant with matching id in the graph or its subgraph.
  *  Uses the visitor in order to avoid throwing errors.  First match terminates search.
  * @returns first matching child or descendant graph
  */
-simplegraph.prototype.find = function find(id) {
+simplegraph.prototype.descendant = function descendant(id) {
 
   var child = false;
   

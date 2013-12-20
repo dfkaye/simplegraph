@@ -9008,11 +9008,11 @@ simplegraph.prototype.size = function size() {
 };
 
 /*
- * @method find locates child or descendant with matching id in the graph or its subgraph.
+ * @method descendant locates child or descendant with matching id in the graph or its subgraph.
  *  Uses the visitor in order to avoid throwing errors.  First match terminates search.
  * @returns first matching child or descendant graph
  */
-simplegraph.prototype.find = function find(id) {
+simplegraph.prototype.descendant = function descendant(id) {
 
   var child = false;
   
@@ -9194,7 +9194,7 @@ test('big fixture find first child', function(t) {
   var id = '' + 2;
   var time = (new Date()).getTime();
   
-  t.equal(fixture.find(id).id, id, 'should find first child [' + id + ']')
+  t.equal(fixture.descendant(id).id, id, 'should find first child [' + id + ']')
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
 });
 
@@ -9205,7 +9205,7 @@ test('big fixture find random id', function(t) {
   var id = '' + Math.ceil(Math.sqrt(count) * Math.random(Math.sqrt(count)));
   var time = (new Date()).getTime();
   
-  t.equal(fixture.find(id).id, id, 'should find by random id [' + id + ']')
+  t.equal(fixture.descendant(id).id, id, 'should find by random id [' + id + ']')
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
 });
 
@@ -9216,7 +9216,7 @@ test('big fixture find last last created element by name', function(t) {
   var id = last; // re-using this from the setup
   var time = (new Date()).getTime();
   
-  t.equal(fixture.find(id).id, id, 'should find last element [' + id + ']')
+  t.equal(fixture.descendant(id).id, id, 'should find last element [' + id + ']')
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to find ' + id)
 });
 
@@ -9264,8 +9264,8 @@ function fixture(id) {
 
 function bdbCycle(main) {
 
-  var b = main.find('b');
-  var d = main.find('d');
+  var b = main.descendant('b');
+  var d = main.descendant('d');
   
   // b -> c -> d -> b for the cycle
   // manually push b on d for the cycle
@@ -9303,7 +9303,7 @@ test('instance', function (t) {
   t.equal(typeof main.remove, 'function', 'remove');
   t.equal(typeof main.parents, 'function', 'parents');
   t.equal(typeof main.subgraph, 'function', 'subgraph');
-  t.equal(typeof main.find, 'function', 'find');
+  t.equal(typeof main.descendant, 'function', 'find');
   t.equal(typeof main.size, 'function', 'size');
 
   t.equal(typeof main.resolve, 'function', 'resolve');
@@ -9656,7 +9656,7 @@ test('find child', function (t) {
     break;
   }
   
-  var child = main.find(id);
+  var child = main.descendant(id);
   
   t.equal(child.id, id, 'should find child');
 
@@ -9667,7 +9667,7 @@ test('find descendant', function (t) {
 
   var main = fixture('main');
   var id = 'e';
-  var descendant = main.find(id);
+  var descendant = main.descendant(id);
   
   t.equal(descendant.id, id, 'should find \'e\'');
   
@@ -9677,7 +9677,7 @@ test('find descendant', function (t) {
 test('find non-existent', function (t) {
 
   var main = fixture('main');
-  var bonk = main.find('bonk');
+  var bonk = main.descendant('bonk');
   
   t.notOk(bonk, 'should return no value for \'bonk\'');
   
@@ -9706,7 +9706,7 @@ test('find descendant in cycle', function (t) {
   var descendant;
   
   function exec() {
-    descendant = main.find(id);
+    descendant = main.descendant(id);
   }
   
   t.doesNotThrow(exec);
@@ -9721,7 +9721,7 @@ test('find non-existent in cycle', function (t) {
   var bonk;
   
   function exec() {
-    bonk = main.find('bonk');
+    bonk = main.descendant('bonk');
   }
   
   main.attach(main);
@@ -9775,7 +9775,7 @@ test('sort fixture subgraph', function (t) {
 
   var main = fixture('main');
   var expected = ['e','d','c'];
-  var results = main.find('c').sort();
+  var results = main.descendant('c').sort();
   
   t.equal(results.join(' '), expected.join(' ')); 
 });
