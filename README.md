@@ -190,11 +190,6 @@ child; else it returns __false__.
     
     main.attach(a); // again
     // => false
-    
-<del>
-WARNING: The `attach()` method uses `resolve()` internally, which throws an 
-error if a cycle is detected. __To avoid cycles, always use `attach()` to modify the graph.__
-</del>
 
 __detach(id)__
 
@@ -212,9 +207,23 @@ set to itself if the `parents` array is empty.
     main.detach('a'); // again
     // => false
 
-__indexOf(id)__
+__empty()__
 
-__[ deprecated and removed ]__
+`empty()` returns true if a graph has no edges; else returns __false__.
+
+    var main = simplegraph('main');
+    main.empty()
+    // true
+    
+    main.attach(a);
+    // => a
+    main.empty()
+    // false
+    
+    main.detach('a');
+    // => a
+    main.empty()
+    // true
 
 __has(id)__
 
@@ -231,6 +240,10 @@ found matching the id, the child is returned; else `has()` returns __false__.
     main.has('a')
     // false
     
+__indexOf(id)__
+
+__[ deprecated and removed ]__
+
 __descendant(id)__
 
 `descendant()` accepts a string id for the target descendant of a graph. If a 
@@ -414,6 +427,18 @@ __View the generated test-bundle page on
 TODO
 ----
 
++ refactor resolve() to take a properties object, a visit function, maybe an 
+    after function, to reduce verbose visitor creation gack everywhere
++ add bulk attach capability ~ possibly a `load` method that runs attachment on 
+    a (dare I say it) separate process or worker or iframe... or maybe an excuse 
+    to try promises or streams...
++ add serialize() (and deserialize ?) support as part of that *(maybe)*    
++ _add code snippets for each method in the README (especially for visitor)_
++ _split up the tests into smaller method-specific files_
++ get off testling ~ testling is unreliable ~ shouldn't have to keep fixing
+    their car, just rent another one
++ get off of tape, go with jasmine ~ travis works with jasmine-node
+
 + <del>__fix recursion performance on edges__
   - change edges from array to a map
   - remove `indexOf`
@@ -427,18 +452,8 @@ TODO
     looping ~ using an edge *map* reduces attach() and size() times enough that 
     a big fixture with 2 million items is processed in 2-3s good enough for 
     now__</del>
++ <del>add `empty` method to replace the for-in fakeouts</del>
 + <del>rename find() to descendant()</del>
-+ refactor resolve() to take a properties object, a visit function, maybe an 
-    after function, to reduce verbose visitor creation gack everywhere
-+ add bulk attach capability ~ possibly a `load` method that runs attachment on 
-    a (dare I say it) separate process or worker or iframe... or maybe an excuse 
-    to try promises or streams...
-+ add serialize() (and deserialize ?) support as part of that *(maybe)*    
-+ _add code snippets for each method in the README (especially for visitor)_
-+ _split up the tests into smaller method-specific files_
-+ get off testling ~ testling is unreliable ~ shouldn't have to keep fixing
-    their car, just rent another one
-+ get off of tape, go with jasmine ~ travis works with jasmine-node
 + <del>_add topological sort_</del>
 + <del>rename `require`'d graph function to `simplegraph`</del>
 + <del>massive speed up of big-fixture setup using edges directly rather than 

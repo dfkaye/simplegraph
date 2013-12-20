@@ -19,10 +19,80 @@ function simplegraph(id) {
   }
   
   this.id = id;
-  // this.edges = [];
   this.edges = {};
-
 }
+
+/*
+ * @method attach inserts an edge in the current graph.
+ * @param edge graph instance
+ * @returns false if an edge with matching id is found, else returns the attached edge
+ */
+simplegraph.prototype.attach = function attach(edge) {
+
+  if (!(edge instanceof simplegraph)) {
+    throw new Error('attach() attempting to attach a non-graph object as an edge');
+  }
+
+  if (!this.edges[edge.id]) { 
+    return this.edges[edge.id] = edge;
+  }
+  return false;
+};
+
+/*
+ * @method detach removes an edge with the matching id.
+ * @returns boolean false is no edge found, else returns the removed edge
+ */
+simplegraph.prototype.detach = function detach(id) {
+  var edge = this.edges[id] || false;
+  if (edge) { 
+    delete this.edges[id];
+  }
+  return edge;
+};
+
+/*
+ * @method empty checks whether graph contains any edges.
+ * @returns boolean
+ */
+simplegraph.prototype.empty = function empty() {
+  for (var k in this.edges) {
+    return false;
+  }
+  return true;
+};
+
+/*
+ * @method has checks whether graph contains edge with id.
+ * @param string id
+ * @returns boolean
+ */
+simplegraph.prototype.has = function has(id) {
+  return this.edges[id] || false;
+};
+
+/*
+ * @method size counts all graphs in subgraph, and includes the current graph.
+ * @returns the number of results.
+ */
+simplegraph.prototype.size = function size() {
+  // performance note:
+  // (0.931s to size 2001001 items using edges map) vs (2.4s using resolve().ids.length)
+  // (0.025s to size 2001001 items using edges array) vs (1.36s using resolve().ids.length))
+
+  var size = 0;
+  var edges = this.edges;
+  
+  for (var k in edges) {
+    size = size + 1;
+    size += edges[k].size();
+  }
+  
+  return size;  
+};
+
+
+// TRAVERSAL METHODS WITH RESOLVE AND VISITOR
 
 /*
 * @method resolve - performs a recursive visit through graph and subgraphs. Sets an error 
@@ -61,22 +131,14 @@ simplegraph.prototype.resolve = function resolve(visitor) {
   
   // descend if didn't call done() 
   if (!visitor.exit) {
-    edges = this.edges;
-    for (k in edges) {
-      edges[k].resolve(visitor);
-    }
   
-    //edges = this.edges;
-    //length = edges.length;
+    edges = this.edges;
     
-    //for (var i = 0; i < length; ++i) {
-    
-      // THIS IS THE PROBLEM -
-      // SHOULD CALL VISITOR.VISIT + AFTER
-      //edges[i].resolve(visitor);
-      //visitor.visit(edges[i]);;
-    //}
-    
+    for (k in edges) {
+      // THIS IS A PROBLEM -
+      // SHOULD CALL VISITOR.VISIT + AFTER    
+      edges[k].resolve(visitor);
+    } 
   }
   
   // code smell ~ after clause
@@ -117,76 +179,6 @@ simplegraph.prototype.visitor = function visitor(fn) {
   };
 };
 
-
-/*
- * return index of child edge with matching id
- */
-// simplegraph.prototype.indexOf = function indexOf(id) {
-
-  // var edges = this.edges;
-  // var length = edges.length;
-  
-  // for (var i = 0; i < length; ++i) {
-    // if (edges[i].id === id) {
-      // return i;
-    // }
-  // }
-  
-  // return -1;
-// };
-
-/*
- * graph has edge with id
- */
-simplegraph.prototype.has = function has(id) {
-  return this.edges[id] || false;
-};
-
-/*
- * attach child to current graph
- */
-simplegraph.prototype.attach = function attach(edge) {
-  if (!this.edges[edge.id]) { 
-    return this.edges[edge.id] = edge;
-  }
-  return false;
-  
-  
-  //edge.resolve();
-  // if (this.indexOf(edge.id) === -1) {
-  
-    // this.edges.push(edge);
-    
-    
-    
-    // return edge;
-  // }
-  
-  // return false;
-};
-
-/*
- * detach child with matching id
- */
-simplegraph.prototype.detach = function detach(id) {
-  var edge = this.edges[id] || false;
-  if (edge) { 
-    delete this.edges[id];
-  }
-  return edge;
-  
-  // var index = this.indexOf(id);
-
-  // if (index !== -1) {
-    // return this.edges.splice(index, 1)[0];
-  // }
-  
-  // return false;
-};
-
-
-// TRAVERSAL METHODS WITH RESOLVE AND VISITOR
-
 /*
 * @method remove detaches all occurrences of subgraph from the graph and its descendants.
 * param string id - required id of the subgraph to be detachd
@@ -195,9 +187,9 @@ simplegraph.prototype.detach = function detach(id) {
 simplegraph.prototype.remove = function remove(id) {
 
   var visitor = this.visitor(function(edge) {
+    // *this* is the visitor
     // uses closure on id param
     if (edge.detach(id)) {
-      // *this* is the visitor
       this.results.push(edge);
     }
   });
@@ -243,38 +235,9 @@ simplegraph.prototype.subgraph = function subgraph() {
 };
 
 /*
- * @method size counts all graphs in subgraph, and includes the current graph.
- * @returns the number of results.
- */
-simplegraph.prototype.size = function size() {
-
-  // var size = 1;
-  // var edges = this.edges; //(0.027s to size 2001001 items using this.edges)
-  // var i = edges.length;
-  
-  // while (i--) {
-    // size += edges[i].size();
-  // }
-  
-  // return size; //(0.025s to size 2001001 items using edges)
-  
-  //return this.resolve().ids.length; //(1.36s to size 2001001 items)
-  
-  // count edges
-  var size = 0;
-  var edges = this.edges;
-  for (var k in edges) {
-    size = size + 1;
-    size += edges[k].size();
-  }
-  return size; 
-  //(0.931s to size 2001001 items) vs (2.4s using resolve())
-  //return this.resolve().ids.length; 
-};
-
-/*
- * @method descendant locates child or descendant with matching id in the graph or its subgraph.
- *  Uses the visitor in order to avoid throwing errors.  First match terminates search.
+ * @method descendant locates child or descendant with matching id in the graph or its 
+ *  subgraph.  Uses the visitor in order to avoid throwing errors.  First match terminates 
+ *  search.
  * @returns first matching child or descendant graph
  */
 simplegraph.prototype.descendant = function descendant(id) {
@@ -284,22 +247,12 @@ simplegraph.prototype.descendant = function descendant(id) {
   var visitor = this.visitor(function(edge) {
     // uses closure on id param
     var item = edge.edges[id];
+    
     if (item) {
       child = item;
       this.done();
     }
-    /*
-    var index = edge.indexOf(id);
-    
-    if (index !== -1) {
-    
-      child = edge.edges[index];
-      
-      // terminate the search in resolve() on this visitor
-      // *this* is the visitor
-      this.done();
-    }*/
-  })
+  });
   
   this.resolve(visitor);
 
@@ -330,22 +283,13 @@ simplegraph.prototype.list = function list() {
     for (var i = 0; i < this.depth; i++) {
       this.results.push(' ');
     }
-
-    // if (edge.edges.length > 0) {
-      // this.results.push('+');
-    // } else {
-      // this.results.push('-');
-    // }
-    i = 0;
-    for (var k in edge.edges) {
-      i += 1;
-      break;
-    }
-    if (i > 0) {
-      this.results.push('+');
-    } else {
+    
+    if (edge.empty()) {
       this.results.push('-');
+    } else {
+      this.results.push('+');
     }
+    
     this.results.push(' ' + edge.id + '\n');
   };
   
@@ -367,25 +311,12 @@ simplegraph.prototype.sort = function sort() {
   
   visitor.after = function (edge) {
     
-    // *this* is the visitor
-    // if (!this.visited[edge.id]) {
-      // if (edge.edges.length > 0) {
-        // this.results.push(edge.id);
-      // } else {
-        // this.results.unshift(edge.id);
-      // }
-    // }
-    
     if (!this.visited[edge.id]) {
-      var i = 0;
-      for (var k in edge.edges) {
-        i += 1;
-        break;
-      }
-      if (i > 0) {
-        this.results.push(edge.id);
-      } else {
+    
+      if (edge.empty()) {
         this.results.unshift(edge.id);
+      } else {
+        this.results.push(edge.id);
       }
     }
   };

@@ -8754,10 +8754,80 @@ function simplegraph(id) {
   }
   
   this.id = id;
-  // this.edges = [];
   this.edges = {};
-
 }
+
+/*
+ * @method attach inserts an edge in the current graph.
+ * @param edge graph instance
+ * @returns false if an edge with matching id is found, else returns the attached edge
+ */
+simplegraph.prototype.attach = function attach(edge) {
+
+  if (!(edge instanceof simplegraph)) {
+    throw new Error('attach() attempting to attach a non-graph object as an edge');
+  }
+
+  if (!this.edges[edge.id]) { 
+    return this.edges[edge.id] = edge;
+  }
+  return false;
+};
+
+/*
+ * @method detach removes an edge with the matching id.
+ * @returns boolean false is no edge found, else returns the removed edge
+ */
+simplegraph.prototype.detach = function detach(id) {
+  var edge = this.edges[id] || false;
+  if (edge) { 
+    delete this.edges[id];
+  }
+  return edge;
+};
+
+/*
+ * @method empty checks whether graph contains any edges.
+ * @returns boolean
+ */
+simplegraph.prototype.empty = function empty() {
+  for (var k in this.edges) {
+    return false;
+  }
+  return true;
+};
+
+/*
+ * @method has checks whether graph contains edge with id.
+ * @param string id
+ * @returns boolean
+ */
+simplegraph.prototype.has = function has(id) {
+  return this.edges[id] || false;
+};
+
+/*
+ * @method size counts all graphs in subgraph, and includes the current graph.
+ * @returns the number of results.
+ */
+simplegraph.prototype.size = function size() {
+  // performance note:
+  // (0.931s to size 2001001 items using edges map) vs (2.4s using resolve().ids.length)
+  // (0.025s to size 2001001 items using edges array) vs (1.36s using resolve().ids.length))
+
+  var size = 0;
+  var edges = this.edges;
+  
+  for (var k in edges) {
+    size = size + 1;
+    size += edges[k].size();
+  }
+  
+  return size;  
+};
+
+
+// TRAVERSAL METHODS WITH RESOLVE AND VISITOR
 
 /*
 * @method resolve - performs a recursive visit through graph and subgraphs. Sets an error 
@@ -8796,22 +8866,14 @@ simplegraph.prototype.resolve = function resolve(visitor) {
   
   // descend if didn't call done() 
   if (!visitor.exit) {
-    edges = this.edges;
-    for (k in edges) {
-      edges[k].resolve(visitor);
-    }
   
-    //edges = this.edges;
-    //length = edges.length;
+    edges = this.edges;
     
-    //for (var i = 0; i < length; ++i) {
-    
-      // THIS IS THE PROBLEM -
-      // SHOULD CALL VISITOR.VISIT + AFTER
-      //edges[i].resolve(visitor);
-      //visitor.visit(edges[i]);;
-    //}
-    
+    for (k in edges) {
+      // THIS IS A PROBLEM -
+      // SHOULD CALL VISITOR.VISIT + AFTER    
+      edges[k].resolve(visitor);
+    } 
   }
   
   // code smell ~ after clause
@@ -8852,76 +8914,6 @@ simplegraph.prototype.visitor = function visitor(fn) {
   };
 };
 
-
-/*
- * return index of child edge with matching id
- */
-// simplegraph.prototype.indexOf = function indexOf(id) {
-
-  // var edges = this.edges;
-  // var length = edges.length;
-  
-  // for (var i = 0; i < length; ++i) {
-    // if (edges[i].id === id) {
-      // return i;
-    // }
-  // }
-  
-  // return -1;
-// };
-
-/*
- * graph has edge with id
- */
-simplegraph.prototype.has = function has(id) {
-  return this.edges[id] || false;
-};
-
-/*
- * attach child to current graph
- */
-simplegraph.prototype.attach = function attach(edge) {
-  if (!this.edges[edge.id]) { 
-    return this.edges[edge.id] = edge;
-  }
-  return false;
-  
-  
-  //edge.resolve();
-  // if (this.indexOf(edge.id) === -1) {
-  
-    // this.edges.push(edge);
-    
-    
-    
-    // return edge;
-  // }
-  
-  // return false;
-};
-
-/*
- * detach child with matching id
- */
-simplegraph.prototype.detach = function detach(id) {
-  var edge = this.edges[id] || false;
-  if (edge) { 
-    delete this.edges[id];
-  }
-  return edge;
-  
-  // var index = this.indexOf(id);
-
-  // if (index !== -1) {
-    // return this.edges.splice(index, 1)[0];
-  // }
-  
-  // return false;
-};
-
-
-// TRAVERSAL METHODS WITH RESOLVE AND VISITOR
-
 /*
 * @method remove detaches all occurrences of subgraph from the graph and its descendants.
 * param string id - required id of the subgraph to be detachd
@@ -8930,9 +8922,9 @@ simplegraph.prototype.detach = function detach(id) {
 simplegraph.prototype.remove = function remove(id) {
 
   var visitor = this.visitor(function(edge) {
+    // *this* is the visitor
     // uses closure on id param
     if (edge.detach(id)) {
-      // *this* is the visitor
       this.results.push(edge);
     }
   });
@@ -8978,38 +8970,9 @@ simplegraph.prototype.subgraph = function subgraph() {
 };
 
 /*
- * @method size counts all graphs in subgraph, and includes the current graph.
- * @returns the number of results.
- */
-simplegraph.prototype.size = function size() {
-
-  // var size = 1;
-  // var edges = this.edges; //(0.027s to size 2001001 items using this.edges)
-  // var i = edges.length;
-  
-  // while (i--) {
-    // size += edges[i].size();
-  // }
-  
-  // return size; //(0.025s to size 2001001 items using edges)
-  
-  //return this.resolve().ids.length; //(1.36s to size 2001001 items)
-  
-  // count edges
-  var size = 0;
-  var edges = this.edges;
-  for (var k in edges) {
-    size = size + 1;
-    size += edges[k].size();
-  }
-  return size; 
-  //(0.931s to size 2001001 items) vs (2.4s using resolve())
-  //return this.resolve().ids.length; 
-};
-
-/*
- * @method descendant locates child or descendant with matching id in the graph or its subgraph.
- *  Uses the visitor in order to avoid throwing errors.  First match terminates search.
+ * @method descendant locates child or descendant with matching id in the graph or its 
+ *  subgraph.  Uses the visitor in order to avoid throwing errors.  First match terminates 
+ *  search.
  * @returns first matching child or descendant graph
  */
 simplegraph.prototype.descendant = function descendant(id) {
@@ -9019,22 +8982,12 @@ simplegraph.prototype.descendant = function descendant(id) {
   var visitor = this.visitor(function(edge) {
     // uses closure on id param
     var item = edge.edges[id];
+    
     if (item) {
       child = item;
       this.done();
     }
-    /*
-    var index = edge.indexOf(id);
-    
-    if (index !== -1) {
-    
-      child = edge.edges[index];
-      
-      // terminate the search in resolve() on this visitor
-      // *this* is the visitor
-      this.done();
-    }*/
-  })
+  });
   
   this.resolve(visitor);
 
@@ -9065,22 +9018,13 @@ simplegraph.prototype.list = function list() {
     for (var i = 0; i < this.depth; i++) {
       this.results.push(' ');
     }
-
-    // if (edge.edges.length > 0) {
-      // this.results.push('+');
-    // } else {
-      // this.results.push('-');
-    // }
-    i = 0;
-    for (var k in edge.edges) {
-      i += 1;
-      break;
-    }
-    if (i > 0) {
-      this.results.push('+');
-    } else {
+    
+    if (edge.empty()) {
       this.results.push('-');
+    } else {
+      this.results.push('+');
     }
+    
     this.results.push(' ' + edge.id + '\n');
   };
   
@@ -9102,25 +9046,12 @@ simplegraph.prototype.sort = function sort() {
   
   visitor.after = function (edge) {
     
-    // *this* is the visitor
-    // if (!this.visited[edge.id]) {
-      // if (edge.edges.length > 0) {
-        // this.results.push(edge.id);
-      // } else {
-        // this.results.unshift(edge.id);
-      // }
-    // }
-    
     if (!this.visited[edge.id]) {
-      var i = 0;
-      for (var k in edge.edges) {
-        i += 1;
-        break;
-      }
-      if (i > 0) {
-        this.results.push(edge.id);
-      } else {
+    
+      if (edge.empty()) {
         this.results.unshift(edge.id);
+      } else {
+        this.results.push(edge.id);
       }
     }
   };
@@ -9166,75 +9097,71 @@ function bdbCycle(main) {
   var b = main.descendant('b');
   var d = main.descendant('d');
   
-  // b -> c -> d -> b for the cycle
-  // manually push b on d for the cycle
-  // avoiding attach which uses resolve internally
-  //d.edges.push(b);
-  
-  d.edges['b'] = b;
+  // b -> c -> d -> b for the cycle 
+  d.attach(b);
 }
 
 /*** TESTS ***/
 
 test('smoke test', function (t) {
 
+  t.plan(1);
+
   t.equal(typeof simplegraph, 'function');
-  
-  t.end();
 });
 
 test('instance', function (t) {
   
+  t.plan(16);
+
   var main = simplegraph('main');
 
   t.ok(main instanceof simplegraph, 'main instanceof simplegraph');
   t.ok(main.id === 'main', 'main.id');
   t.ok(main.edges, 'main.edges');
-  
-  //t.ok(main.root === main, 'main root');
-  
-  t.equal(typeof main.has, 'function', 'has');
 
   t.equal(typeof main.attach, 'function', 'attach');
-  //t.equal(typeof main.indexOf, 'function', 'indexOf');
   t.equal(typeof main.detach, 'function', 'detach');
-  
-  t.equal(typeof main.remove, 'function', 'remove');
-  t.equal(typeof main.parents, 'function', 'parents');
-  t.equal(typeof main.subgraph, 'function', 'subgraph');
-  t.equal(typeof main.descendant, 'function', 'find');
+  t.equal(typeof main.empty, 'function', 'empty');
+  t.equal(typeof main.has, 'function', 'has');
   t.equal(typeof main.size, 'function', 'size');
 
   t.equal(typeof main.resolve, 'function', 'resolve');
   t.equal(typeof main.visitor, 'function', 'visitor');
   
-  t.end();
+  t.equal(typeof main.remove, 'function', 'remove');
+  t.equal(typeof main.parents, 'function', 'parents');
+  t.equal(typeof main.subgraph, 'function', 'subgraph');
+  t.equal(typeof main.descendant, 'function', 'find');
+  t.equal(typeof main.list, 'function', 'list');
+  t.equal(typeof main.sort, 'function', 'sort');
 });
 
 test('constructor throws on empty string id', function (t) {
+
+  t.plan(1);
 
   function emptyString() {
     simplegraph('');
   }
   
   t.throws(emptyString, 'emptyString', 'simplegraph requires id param as string');
-
-  t.end();
 });
 
 test('constructor throws on empty argument', function (t) {
+
+  t.plan(1);
   
   function empty() {
     simplegraph();
   }
   
   t.throws(empty, 'empty', 'simplegraph requires id param as string');
- 
-  t.end();
 });
 
+test('attach, empty, has, and detach', function (t) {
 
-test('attach, and detach child graph', function (t) {
+  t.plan(7);
   
   var id = 'b';
   var a = simplegraph('a');
@@ -9242,74 +9169,34 @@ test('attach, and detach child graph', function (t) {
   var child;
   
   t.equal(a.has(id), false, 'should not have b');
-    
+  t.equal(a.empty(), true, 'should be empty');
+  
   a.attach(b);
+  
   t.ok(a.has(id), 'has b');
+  t.equal(a.empty(), false, 'should not be empty');
 
   child = a.detach(id);
+  
   t.equal(a.has(id), false, 'detached b');
-  t.equal(child.id, id, 'should be b');
-
-  t.end();
+  t.equal(a.empty(), true, 'should be empty');
+  t.equal(child, b, 'should be b');
 });
 
+test('attach() with non-graph object throws error', function (t) {
 
-// test('attach, indexOf, and detach child graph', function (t) {
-
-  // var id = 'b';
-  // var a = simplegraph('a');
-  // var b = simplegraph(id);
-  // var child;
+  t.plan(1);
   
-  // t.equal(a.indexOf(id), -1, 'no b');
-    
-  // a.attach(b);
-  // t.ok(a.indexOf(id) > -1, 'indexOf b');
-
-  // child = a.detach(id);
-  // t.equal(a.indexOf(id), -1, 'detached b');
-  // t.equal(child.id, id, 'should be b');
-
-  // t.end();
-// });
-
-// test('attach and detach subgraph', function (t) {
-
-  // var ids = ['main', 'a', 'b'];
-  // var main = simplegraph(ids[0]);
-  // var a = simplegraph(ids[1]);
-  // var b = simplegraph(ids[2]);
-  // var visitor;
-  
-  // a.attach(b);
-  // main.attach(a);
-  
-  // a = main.detach(a.id);
-  // t.equal(main.edges.length, 0, 'main should have no edges');
-
-  // a.detach(b.id);
-  // t.equal(a.edges.length, 0, 'a should have no edges');
-
-  // t.end();
-// });
-
-test('attach() with cycle throws Error(): main -> main', function (t) {
-
-  var msg = 'main -> main';
-  var main = simplegraph('main');
-  var visitor;
-
   function exec() {
-    main.attach(main);
-    main.resolve()
+    simplegraph('root').attach({ id: 'fake' });
   }
   
-  t.throws(exec, 'should detect cycle', msg);
-    
-  t.end();
+  t.throws(exec, 'should complain about non-graph object');
 });
 
 test('visitor instance', function (t) {
+
+  t.plan(4);
 
   var main = fixture('main');
   var visitor = main.visitor();
@@ -9318,22 +9205,22 @@ test('visitor instance', function (t) {
   t.equal(visitor.ids.length, 0, 'ids array');
   t.ok(visitor.visited, 'visited');
   t.ok(visitor.visiting, 'visiting');
-  
-  t.end();
 });
 
 test('resolve', function (t) {
-    
-  var main = simplegraph('main')
-  var visitor = main.resolve()
+
+  t.plan(1);
+
+  var main = simplegraph('main');
+  var visitor = main.resolve();
       
-  t.equal(visitor.ids.length, 1, 'should visit 1')
-  
-  t.end()
+  t.equal(visitor.ids.length, 1, 'should visit 1');
 });
 
 test('resolve with visit callback', function (t) {
-  
+
+  t.plan(2);
+
   var main = fixture('main');
   var visitor;
   
@@ -9353,12 +9240,12 @@ test('resolve with visit callback', function (t) {
   main.resolve(visitor);
   
   t.equal(visitor.count, 1, 'should count only one main');
-  
-  t.end();
 });
 
 test('done() halts resolve() processing', function (t) {
-  
+
+  t.plan(1);
+
   var main = fixture('main');
   var visitor;
   
@@ -9372,11 +9259,11 @@ test('done() halts resolve() processing', function (t) {
   main.resolve(visitor);
   
   t.equal(visitor.ids.length, 1, 'should visit 1 item');
-  
-  t.end();
 });
 
 test('resolve all subgraphs in graph', function (t) {
+
+  t.plan(1);
 
   var ids = ['main', 'a', 'b'];
   var main = simplegraph(ids[0]);
@@ -9390,8 +9277,6 @@ test('resolve all subgraphs in graph', function (t) {
   visitor = main.resolve();
 
   t.equal(visitor.ids.length, ids.length, 'should have ' + ids.length + ' entries');
-  
-  t.end();
 });
 
 test('resolve each subgraph', function (t) {
@@ -9404,62 +9289,62 @@ test('resolve each subgraph', function (t) {
   for (var k in main.edges) {
     length += 1;
   }
+  
   t.plan(length);
   
   for (var k in main.edges) {
-  
     visitor = main.edges[k].resolve();
+    
     t.equal(visitor.ids[0], main.edges[k].id, 'first id should be ' + main.edges[k].id);
   }
 });
 
 test('resolve cycle throws Error(): main -> main', function (t) {
-
+  
+  t.plan(1);
+  
   var msg = 'main -> main';
   var main = simplegraph('main');
-  var visitor;
 
   function exec() {
-    // manually push main onto edges to avoid calling attach() which uses resolve()...
-    main.edges.push(main);
-    visitor = main.resolve();
+    main.attach(main);
+    main.resolve();
   }
     
   t.throws(exec, 'resolve should detect cycle', msg);
-    
-  t.end();
 })
 
 test('resolve cycle throws Error(): b -> c -> d -> b', function (t) {
 
+  t.plan(1);
+
   var msg = 'b -> c -> d -> b';
   var main = fixture('main');
-  var visitor;
 
   function exec() {
-    visitor = main.resolve();
+    main.resolve();
   }
 
   bdbCycle(main);
    
   t.throws(exec, msg, msg, 'should detect cycle');
-  
-  t.end();
 });
 
 test('remove all occurrences of item in subgraph', function (t) {
 
+  t.plan(1);
+  
   var main = fixture('main');
   var id = 'c';
   var visitor = main.remove(id);
   
   t.equal(visitor.results.length, 3, 'should remove\'c\' from 3 graphs');
-  
-  t.end();
 });
 
 test('remove with cycle', function (t) {
 
+  t.plan(2);
+  
   var main = fixture('main');
   var visitor;
   
@@ -9469,25 +9354,24 @@ test('remove with cycle', function (t) {
   
   bdbCycle(main);
 
-  //t.throws(exec, 'should throw on cycle');
   t.doesNotThrow(exec, 'should not throw on cycle');
   t.equal(visitor.results.length, 3, 'should be removed from 3 graphs');
-  
-  t.end();
 });
 
 test('parents finds all graphs that depend on specified graph id', function (t) {
-
+  
+  t.plan(1);
+  
   var main = fixture('main');
   var id = 'c';
   var visitor = main.parents(id);
   
   t.equal(visitor.results.length, 3, 'should find 3 graphs');
-  
-  t.end();
 })
 
 test('parents with cycle', function (t) {
+
+  t.plan(1);
 
   var main = fixture('main');
   var visitor;
@@ -9499,12 +9383,12 @@ test('parents with cycle', function (t) {
   bdbCycle(main);
   
   t.throws(exec, 'should not throw on cycle');
-
-  t.end();
 });
 
 test('subgraph finds all graphs under the specified graph id', function (t) {
 
+  t.plan(1);
+    
   var names = ['a', 'b', 'c', 'd', 'e'];
   var size = names.length;
   
@@ -9512,44 +9396,48 @@ test('subgraph finds all graphs under the specified graph id', function (t) {
   var visitor = main.subgraph();
   
   t.equal(visitor.results.length, size, 'should find ' + size + ' graphs') ;
-
-  t.end();
 })
 
-test('size of leaf should be 1', function (t) {
+test('size of leaf should be 0', function (t) {
 
-  t.equal(simplegraph('leaf').size(), 0, 'should be 0');
+  t.plan(1);
   
-  t.end();
+  t.equal(simplegraph('leaf').size(), 0, 'should be 0');
 });
 
 test('size returns number of edges', function (t) {
 
+  t.plan(1);
+  
   var names = ['a', 'b', 'c', 'd', 'e'];
   var main = simplegraph('main');
   var size = 0;
+  var child;
+  var edge;
+  
   for (var i = 0; i < names.length; ++i) {
-    var edge = simplegraph(names[i]);
+  
+    edge = simplegraph(names[i]);
     size += 1;
     main.attach(edge);
     
     for (var j = i + 1; j < names.length; ++j ) {
-      var child = simplegraph(names[j])
+      child = simplegraph(names[j]);
       size += 1;
       edge.attach(child);
     }
-    
   }
+  
   t.equal(main.size(), size, 'should find [' + size + '] edges');
-
-  t.end();
 });
 
 test('find child', function (t) {
 
+  t.plan(1);
+  
   var main = fixture('main');
-  // var id = main.edges[0].id;
   var id;
+  
   for (var k in main.edges) {
     id = main.edges[k].id;
     break;
@@ -9558,47 +9446,42 @@ test('find child', function (t) {
   var child = main.descendant(id);
   
   t.equal(child.id, id, 'should find child');
-
-  t.end();
 });
 
 test('find descendant', function (t) {
 
+  t.plan(1);
+  
   var main = fixture('main');
   var id = 'e';
   var descendant = main.descendant(id);
   
   t.equal(descendant.id, id, 'should find \'e\'');
-  
-  t.end();
 });
 
 test('find non-existent', function (t) {
 
+  t.plan(1);
+  
   var main = fixture('main');
   var bonk = main.descendant('bonk');
   
   t.notOk(bonk, 'should return no value for \'bonk\'');
-  
-  t.end();
 });
 
 test('find descendant in cycle', function (t) {
 
+  t.plan(2);
+  
   var main = fixture('main');
-  
-  main.attach(main);
-  //main.edges.push(main);
-  
-  //var id = main.edges[0].edges[0].id;
   var id;
   
-  for (var k in main.edges) {
-    edge = main.edges[k];
-    for (k in edge.edges) {
-      id = edge.edges[k].id;
-      break;
-    }
+  main.attach(main);
+  
+  var edge = main.edges['a'];
+    
+  for (k in edge.edges) {
+    id = edge.edges[k].id;
     break;
   }
   
@@ -9610,12 +9493,12 @@ test('find descendant in cycle', function (t) {
   
   t.doesNotThrow(exec);
   t.equal(descendant.id, id, 'should find in cycle');
-  
-  t.end();
 });
 
 test('find non-existent in cycle', function (t) {
 
+  t.plan(2);
+  
   var main = fixture('main');
   var bonk;
   
@@ -9624,21 +9507,20 @@ test('find non-existent in cycle', function (t) {
   }
   
   main.attach(main);
-  //main.edges.push(main);
 
   t.throws(exec, 'should throw error');
   t.notOk(bonk, 'should return no value');
-  
-  t.end();
 });
 
 test('print list', function (t) {
 
+  t.plan(8);
+  
   var main = fixture('main');
   var list = main.list();
   
-  console.log(list)
-// console.log(list.match(/[\+][\s]*main\b/g))
+  console.log(list);
+
   t.equal(list.match(/[\+][\s]*main\b/g).length, 1, 'should be 1 "+ main"  entry');
   
   //should be indented
@@ -9653,13 +9535,11 @@ test('print list', function (t) {
   //no edges, use minuses
   t.equal(list.match(/[\-][\s]d/g).length, 6, 'should be 6 "- d" entries');
   t.equal(list.match(/[\-][\s]e/g).length, 4, 'should be 4 "- e" entries');
-  
-  t.end();
 });
 
 test('sort fixture', function (t) {
 
-  t.plan(1)
+  t.plan(1);
   
   var main = fixture('main');
   var expected = ['e','d','c','b','a','main'];
@@ -9670,7 +9550,7 @@ test('sort fixture', function (t) {
 
 test('sort fixture subgraph', function (t) {
 
-  t.plan(1)
+  t.plan(1);
 
   var main = fixture('main');
   var expected = ['e','d','c'];
@@ -9681,22 +9561,22 @@ test('sort fixture subgraph', function (t) {
 
 test('sort b-fixture', function (t) {
 
-  t.plan(1)
+  t.plan(1);
   
-  var a = simplegraph('a')
-  var b = simplegraph('b')
-  var c = simplegraph('c')
-  var d = simplegraph('d')
-  var e = simplegraph('e')
+  var a = simplegraph('a');
+  var b = simplegraph('b');
+  var c = simplegraph('c');
+  var d = simplegraph('d');
+  var e = simplegraph('e');
   
-  d.attach(c)
-  d.attach(e)
+  d.attach(c);
+  d.attach(e);
   
-  a.attach(c)
-  a.attach(d)
+  a.attach(c);
+  a.attach(d);
   
-  b.attach(a)
-  b.attach(d)
+  b.attach(a);
+  b.attach(d);
   
   var expected = ['e','c','d', 'a', 'b'];
   
@@ -9707,7 +9587,7 @@ test('sort b-fixture', function (t) {
 
 test('sort complex fixture', function (t) {
 
-  t.plan(1)
+  t.plan(1);
   
   var fixture = simplegraph('fixture');
   var ids = 'zyxwvutsrqponm'.split('');
@@ -9725,37 +9605,37 @@ test('sort complex fixture', function (t) {
   fixture.attach(edges['o']);
   fixture.attach(edges['p']);
 
-  edges['m'].attach(edges['q'])
-  edges['m'].attach(edges['r'])
-  edges['m'].attach(edges['x'])
+  edges['m'].attach(edges['q']);
+  edges['m'].attach(edges['r']);
+  edges['m'].attach(edges['x']);
  
-  edges['n'].attach(edges['q'])
-  edges['n'].attach(edges['u'])
-  edges['n'].attach(edges['o'])
+  edges['n'].attach(edges['q']);
+  edges['n'].attach(edges['u']);
+  edges['n'].attach(edges['o']);
 
-  edges['p'].attach(edges['o'])
-  edges['p'].attach(edges['s'])
-  edges['p'].attach(edges['z'])
+  edges['p'].attach(edges['o']);
+  edges['p'].attach(edges['s']);
+  edges['p'].attach(edges['z']);
   
-  edges['o'].attach(edges['r'])
-  edges['o'].attach(edges['v'])  
-  edges['o'].attach(edges['s'])
+  edges['o'].attach(edges['r']);
+  edges['o'].attach(edges['v']);
+  edges['o'].attach(edges['s']);
 
-  edges['q'].attach(edges['t'])
+  edges['q'].attach(edges['t']);
   
-  edges['s'].attach(edges['r'])
+  edges['s'].attach(edges['r']);
 
-  edges['r'].attach(edges['u'])
-  edges['r'].attach(edges['y'])
+  edges['r'].attach(edges['u']);
+  edges['r'].attach(edges['y']);
   
-  edges['u'].attach(edges['t'])
+  edges['u'].attach(edges['t']);
 
-  edges['y'].attach(edges['v'])
+  edges['y'].attach(edges['v']);
 
-  edges['v'].attach(edges['x'])
-  edges['v'].attach(edges['w'])
+  edges['v'].attach(edges['x']);
+  edges['v'].attach(edges['w']);
   
-  edges['w'].attach(edges['z'])
+  edges['w'].attach(edges['z']);
   
   // Build out expected ids array
   
@@ -9798,10 +9678,9 @@ test('sort complex fixture', function (t) {
 
   // depth 0 [fixture] (done)
   expected.push('fixture');
-    
-  var results = fixture.sort()
 
-  t.equal(results.join(' '), expected.join(' '))
+  // FINALLY - LET'S RUN THIS TEST
+  t.equal(fixture.sort().join(' '), expected.join(' '))
 });
 },{"../simplegraph":29,"tape":19}]},{},[30])
 ;
