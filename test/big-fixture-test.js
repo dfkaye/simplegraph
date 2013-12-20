@@ -11,28 +11,32 @@ test('BIG FIXTURE SETUP creates over 2 million elements', function(t) {
   t.plan(1);
   
   count = 0;
-  //name = '' + ++count;
-  fixture = new simplegraph('' + ++count);
+  var name = '' + ++count;
+  fixture = new simplegraph(name);
   
   var child;
   var time = (new Date()).getTime();
   
   for (var i = 0; i < 2000; i++) {
   
-    //name = '' + ++count;
-    child = new simplegraph('' + ++count);
+    name = '' + ++count;
+    child = new simplegraph(name);
     
     for (var j = i ; j > 0; --j) {
     
-      //name = '' + ++count;
+      name = '' + ++count;
+      //child.edges[name] = (new simplegraph(name))
+      child.attach(new simplegraph(name))
+
       //child.attach(simplegraph(name))
       //if (child.indexOf(name) === -1) {
-        child.edges.push(new simplegraph('' + ++count))
+        //child.edges.push(new simplegraph(name))
       //}
     }
     
-    //fixture.attach(child);
-    fixture.edges.push(child)
+    fixture.attach(child);
+    //fixture.edges.push(child)
+    //fixture.edges[child.id] = child;
   }
   
   last = child.id;
@@ -48,7 +52,7 @@ test('big fixture size', function(t) {
   
   var time = (new Date()).getTime();
   
-  t.equal(fixture.size(), count, 'should have ' + count + ' items')
+  t.equal(fixture.size(), (count - 1), 'should have [' + (count - 1) + '] edges')
   console.log((((new Date()).getTime() - time) / 1000) + ' seconds to size ' + count + ' items')
 });
 

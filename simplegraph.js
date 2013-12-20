@@ -19,7 +19,9 @@ function simplegraph(id) {
   }
   
   this.id = id;
-  this.edges = [];
+  // this.edges = [];
+  this.edges = {};
+
 }
 
 /*
@@ -37,6 +39,7 @@ simplegraph.prototype.resolve = function resolve(visitor) {
   var id = this.id;
   var edges;
   var length;
+  var k;
   
   visitor = visitor || this.visitor();
   
@@ -59,14 +62,21 @@ simplegraph.prototype.resolve = function resolve(visitor) {
   // descend if didn't call done() 
   if (!visitor.exit) {
     edges = this.edges;
-    length = edges.length;
-    for (var i = 0; i < length; ++i) {
+    for (k in edges) {
+      edges[k].resolve(visitor);
+    }
+  
+    //edges = this.edges;
+    //length = edges.length;
+    
+    //for (var i = 0; i < length; ++i) {
     
       // THIS IS THE PROBLEM -
       // SHOULD CALL VISITOR.VISIT + AFTER
-      edges[i].resolve(visitor);
+      //edges[i].resolve(visitor);
       //visitor.visit(edges[i]);;
-    }
+    //}
+    
   }
   
   // code smell ~ after clause
@@ -111,50 +121,67 @@ simplegraph.prototype.visitor = function visitor(fn) {
 /*
  * return index of child edge with matching id
  */
-simplegraph.prototype.indexOf = function indexOf(id) {
+// simplegraph.prototype.indexOf = function indexOf(id) {
 
-  var edges = this.edges;
-  var length = edges.length;
+  // var edges = this.edges;
+  // var length = edges.length;
   
-  for (var i = 0; i < length; ++i) {
-    if (edges[i].id === id) {
-      return i;
-    }
-  }
+  // for (var i = 0; i < length; ++i) {
+    // if (edges[i].id === id) {
+      // return i;
+    // }
+  // }
   
-  return -1;
+  // return -1;
+// };
+
+/*
+ * graph has edge with id
+ */
+simplegraph.prototype.has = function has(id) {
+  return this.edges[id] || false;
 };
-
 
 /*
  * attach child to current graph
  */
 simplegraph.prototype.attach = function attach(edge) {
-
-  if (this.indexOf(edge.id) === -1) {
-  
-    this.edges.push(edge);
-    
-    edge.resolve();
-    
-    return edge;
+  if (!this.edges[edge.id]) { 
+    return this.edges[edge.id] = edge;
   }
-  
   return false;
+  
+  
+  //edge.resolve();
+  // if (this.indexOf(edge.id) === -1) {
+  
+    // this.edges.push(edge);
+    
+    
+    
+    // return edge;
+  // }
+  
+  // return false;
 };
 
 /*
  * detach child with matching id
  */
 simplegraph.prototype.detach = function detach(id) {
-  
-  var index = this.indexOf(id);
-
-  if (index !== -1) {
-    return this.edges.splice(index, 1)[0];
+  var edge = this.edges[id] || false;
+  if (edge) { 
+    delete this.edges[id];
   }
+  return edge;
   
-  return false;
+  // var index = this.indexOf(id);
+
+  // if (index !== -1) {
+    // return this.edges.splice(index, 1)[0];
+  // }
+  
+  // return false;
 };
 
 
@@ -189,7 +216,7 @@ simplegraph.prototype.parents = function parents(id) {
   var visitor = this.visitor(function(edge) {
     // *this* is the visitor
     // uses closure on id param
-    if (!this.visited[edge.id] && edge.indexOf(id) !== -1) {
+    if (!this.visited[edge.id] && edge.edges[id]) {
       this.results.push(edge);
     }
   });
@@ -231,7 +258,18 @@ simplegraph.prototype.size = function size() {
   
   // return size; //(0.025s to size 2001001 items using edges)
   
-  return this.resolve().ids.length; //(1.36s to size 2001001 items)
+  //return this.resolve().ids.length; //(1.36s to size 2001001 items)
+  
+  // count edges
+  var size = 0;
+  var edges = this.edges;
+  for (var k in edges) {
+    size = size + 1;
+    size += edges[k].size();
+  }
+  return size; 
+  //(0.931s to size 2001001 items) vs (2.4s using resolve())
+  //return this.resolve().ids.length; 
 };
 
 /*
@@ -244,8 +282,13 @@ simplegraph.prototype.find = function find(id) {
   var child = false;
   
   var visitor = this.visitor(function(edge) {
-
     // uses closure on id param
+    var item = edge.edges[id];
+    if (item) {
+      child = item;
+      this.done();
+    }
+    /*
     var index = edge.indexOf(id);
     
     if (index !== -1) {
@@ -255,7 +298,7 @@ simplegraph.prototype.find = function find(id) {
       // terminate the search in resolve() on this visitor
       // *this* is the visitor
       this.done();
-    }
+    }*/
   })
   
   this.resolve(visitor);
@@ -288,12 +331,21 @@ simplegraph.prototype.list = function list() {
       this.results.push(' ');
     }
 
-    if (edge.edges.length > 0) {
+    // if (edge.edges.length > 0) {
+      // this.results.push('+');
+    // } else {
+      // this.results.push('-');
+    // }
+    i = 0;
+    for (var k in edge.edges) {
+      i += 1;
+      break;
+    }
+    if (i > 0) {
       this.results.push('+');
     } else {
       this.results.push('-');
     }
-    
     this.results.push(' ' + edge.id + '\n');
   };
   
@@ -316,8 +368,21 @@ simplegraph.prototype.sort = function sort() {
   visitor.after = function (edge) {
     
     // *this* is the visitor
+    // if (!this.visited[edge.id]) {
+      // if (edge.edges.length > 0) {
+        // this.results.push(edge.id);
+      // } else {
+        // this.results.unshift(edge.id);
+      // }
+    // }
+    
     if (!this.visited[edge.id]) {
-      if (edge.edges.length > 0) {
+      var i = 0;
+      for (var k in edge.edges) {
+        i += 1;
+        break;
+      }
+      if (i > 0) {
         this.results.push(edge.id);
       } else {
         this.results.unshift(edge.id);

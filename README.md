@@ -3,6 +3,10 @@ simplegraph
 
 Makes a *fairly* simple graph structure (used to be "simple-graph")
 
+
+__[ 19 DEC 2013 ~ REFACTORING WITH BREAKING CHANGES IN PROGRESS ]__
+
+
 Thanks to Ferry Boender
 -----------------------
 
@@ -68,9 +72,9 @@ has been a challenge.
 structure
 ---------
 
-A graph contains an array of `edges` (other graphs). The required constructor 
-argument is a string `id`.  The constructor can be called with or without the 
-`new` keyword. 
+A graph contains a map of `edges` (other graphs) by their id. The required 
+constructor argument is a string `id`.  The constructor can be called with or 
+without the `new` keyword. 
 
     var main = simplegraph('main');
     var main = new simplegraph('main');
@@ -78,7 +82,7 @@ argument is a string `id`.  The constructor can be called with or without the
 That returns an object with the following fields:
 
     main.id      // string 'main'
-    main.edges   // array of graphs []
+    main.edges   // map of graphs {}
     
 These are the only constructor-created properties. 
 
@@ -187,10 +191,10 @@ child; else it returns __false__.
     main.attach(a); // again
     // => false
     
-    
+<del>
 WARNING: The `attach()` method uses `resolve()` internally, which throws an 
 error if a cycle is detected. __To avoid cycles, always use `attach()` to modify the graph.__
-
+</del>
 
 __detach(id)__
 
@@ -209,6 +213,8 @@ set to itself if the `parents` array is empty.
     // => false
 
 __indexOf(id)__
+
+__[ deprecated and removed ]__
 
 `indexOf()` accepts a string id for the target child of a graph. If a child is 
 found matching the id, the child is returned; else indexOf() returns __-1__.
@@ -285,16 +291,15 @@ included as a dependency in the subgraph.
     
 __size()__
 
-`size()` uses `subgraph()` internally and returns the number of subgraph plus
-the current graph itself.
+`size()` returns the number of edges in the subgraph.
 
     // main -> a -> b
-    //              b -> d    
-    //         a -> c -> e
+    //              b -> d -> e
+    //         a -> c -> d -> e
+    //              c -> e
     
     main.size();
-    // => 6 
-    // (the ['a', 'b', 'd', 'c', 'e'] subgraph, plus main)
+    // => 8 arrows
     
 __list(depth?)__
 

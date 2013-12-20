@@ -38,7 +38,9 @@ function bdbCycle(main) {
   // b -> c -> d -> b for the cycle
   // manually push b on d for the cycle
   // avoiding attach which uses resolve internally
-  d.edges.push(b);
+  //d.edges.push(b);
+  
+  d.edges['b'] = b;
 }
 
 /*** TESTS ***/
@@ -60,8 +62,10 @@ test('instance', function (t) {
   
   //t.ok(main.root === main, 'main root');
   
+  t.equal(typeof main.has, 'function', 'has');
+
   t.equal(typeof main.attach, 'function', 'attach');
-  t.equal(typeof main.indexOf, 'function', 'indexOf');
+  //t.equal(typeof main.indexOf, 'function', 'indexOf');
   t.equal(typeof main.detach, 'function', 'detach');
   
   t.equal(typeof main.remove, 'function', 'remove');
@@ -98,53 +102,65 @@ test('constructor throws on empty argument', function (t) {
   t.end();
 });
 
-test('attach, indexOf, and detach child graph', function (t) {
+
+test('attach, and detach child graph', function (t) {
   
   var id = 'b';
   var a = simplegraph('a');
   var b = simplegraph(id);
   var child;
   
-  t.equal(a.indexOf(id), -1, 'no b');
+  t.equal(a.has(id), false, 'should not have b');
     
   a.attach(b);
-  t.ok(a.indexOf(id) > -1, 'indexOf b');
-  //t.equal(b.root, a, 'b.root should be a');
+  t.ok(a.has(id), 'has b');
 
   child = a.detach(id);
-  t.equal(a.indexOf(id), -1, 'detached b');
+  t.equal(a.has(id), false, 'detached b');
   t.equal(child.id, id, 'should be b');
-  //t.equal(b.root, b, 'b.root should be b');
 
   t.end();
 });
 
-test('attach and detach subgraph', function (t) {
 
-  var ids = ['main', 'a', 'b'];
-  var main = simplegraph(ids[0]);
-  var a = simplegraph(ids[1]);
-  var b = simplegraph(ids[2]);
-  var visitor;
-  
-  a.attach(b);
-  //t.equal(b.root, a, 'b.root should be a');
-  
-  main.attach(a);
-  //t.equal(a.root, main, 'a.root should be main');
-  //t.equal(b.root, main, 'b.root should be main');
-  
-  a = main.detach(a.id);
-  //t.equal(a.root, a, 'a.root should be a');
-  t.equal(main.edges.length, 0, 'main should have no edges');
-  //t.equal(b.root, a, 'b.root should be a');
+// test('attach, indexOf, and detach child graph', function (t) {
 
-  a.detach(b.id);
-  //t.equal(b.root, b, 'b.root should be b');
-  t.equal(a.edges.length, 0, 'a should have no edges');
+  // var id = 'b';
+  // var a = simplegraph('a');
+  // var b = simplegraph(id);
+  // var child;
+  
+  // t.equal(a.indexOf(id), -1, 'no b');
+    
+  // a.attach(b);
+  // t.ok(a.indexOf(id) > -1, 'indexOf b');
 
-  t.end();
-});
+  // child = a.detach(id);
+  // t.equal(a.indexOf(id), -1, 'detached b');
+  // t.equal(child.id, id, 'should be b');
+
+  // t.end();
+// });
+
+// test('attach and detach subgraph', function (t) {
+
+  // var ids = ['main', 'a', 'b'];
+  // var main = simplegraph(ids[0]);
+  // var a = simplegraph(ids[1]);
+  // var b = simplegraph(ids[2]);
+  // var visitor;
+  
+  // a.attach(b);
+  // main.attach(a);
+  
+  // a = main.detach(a.id);
+  // t.equal(main.edges.length, 0, 'main should have no edges');
+
+  // a.detach(b.id);
+  // t.equal(a.edges.length, 0, 'a should have no edges');
+
+  // t.end();
+// });
 
 test('attach() with cycle throws Error(): main -> main', function (t) {
 
@@ -154,9 +170,10 @@ test('attach() with cycle throws Error(): main -> main', function (t) {
 
   function exec() {
     main.attach(main);
+    main.resolve()
   }
   
-  t.throws(exec, 'attach should detect cycle', msg);
+  t.throws(exec, 'should detect cycle', msg);
     
   t.end();
 });
@@ -249,15 +266,19 @@ test('resolve all subgraphs in graph', function (t) {
 test('resolve each subgraph', function (t) {
  
   var main = fixture('main');
+  var length = 0;
   var visitor;
   
   // enforce that each edge gets one test, so we don't need to call t.end()
-  t.plan(main.edges.length);
+  for (var k in main.edges) {
+    length += 1;
+  }
+  t.plan(length);
   
-  for (var i = 0; i < main.edges.length; ++i) {
+  for (var k in main.edges) {
   
-    visitor = main.edges[i].resolve();
-    t.equal(visitor.ids[0], main.edges[i].id, 'first id should be ' + main.edges[i].id);
+    visitor = main.edges[k].resolve();
+    t.equal(visitor.ids[0], main.edges[k].id, 'first id should be ' + main.edges[k].id);
   }
 });
 
@@ -366,16 +387,29 @@ test('subgraph finds all graphs under the specified graph id', function (t) {
 
 test('size of leaf should be 1', function (t) {
 
-  t.equal(simplegraph('leaf').size(), 1, 'should be 1');
+  t.equal(simplegraph('leaf').size(), 0, 'should be 0');
   
   t.end();
 });
 
-test('size returns count of subgraph items plus graph in visitor.results', function (t) {
+test('size returns number of edges', function (t) {
 
-  var names = ['main', 'a', 'b', 'c', 'd', 'e'];
-
-  t.equal(fixture('main').size(), names.length, 'should find 6 graphs');
+  var names = ['a', 'b', 'c', 'd', 'e'];
+  var main = simplegraph('main');
+  var size = 0;
+  for (var i = 0; i < names.length; ++i) {
+    var edge = simplegraph(names[i]);
+    size += 1;
+    main.attach(edge);
+    
+    for (var j = i + 1; j < names.length; ++j ) {
+      var child = simplegraph(names[j])
+      size += 1;
+      edge.attach(child);
+    }
+    
+  }
+  t.equal(main.size(), size, 'should find [' + size + '] edges');
 
   t.end();
 });
@@ -383,7 +417,13 @@ test('size returns count of subgraph items plus graph in visitor.results', funct
 test('find child', function (t) {
 
   var main = fixture('main');
-  var id = main.edges[0].id;
+  // var id = main.edges[0].id;
+  var id;
+  for (var k in main.edges) {
+    id = main.edges[k].id;
+    break;
+  }
+  
   var child = main.find(id);
   
   t.equal(child.id, id, 'should find child');
@@ -416,9 +456,21 @@ test('find descendant in cycle', function (t) {
 
   var main = fixture('main');
   
-  main.edges.push(main);
+  main.attach(main);
+  //main.edges.push(main);
   
-  var id = main.edges[0].edges[0].id;
+  //var id = main.edges[0].edges[0].id;
+  var id;
+  
+  for (var k in main.edges) {
+    edge = main.edges[k];
+    for (k in edge.edges) {
+      id = edge.edges[k].id;
+      break;
+    }
+    break;
+  }
+  
   var descendant;
   
   function exec() {
@@ -440,7 +492,8 @@ test('find non-existent in cycle', function (t) {
     bonk = main.find('bonk');
   }
   
-  main.edges.push(main);
+  main.attach(main);
+  //main.edges.push(main);
 
   t.throws(exec, 'should throw error');
   t.notOk(bonk, 'should return no value');
@@ -454,19 +507,19 @@ test('print list', function (t) {
   var list = main.list();
   
   console.log(list)
-
+// console.log(list.match(/[\+][\s]*main\b/g))
   t.equal(list.match(/[\+][\s]*main\b/g).length, 1, 'should be 1 "+ main"  entry');
   
-  // should be indented
+  //should be indented
   t.equal(list.match(/[\+][\s]*a\b/g).length, 1, 'should be 1 "+ a" entry');
   t.equal(list.match(/[\+][\s]*b\b/g).length, 2, 'should be 2 "+ b" entries');
   t.equal(list.match(/[\+][\s]*c\b/g).length, 4, 'should be 4 "+ c" entries');
   
-  // no edges, no pluses
+  //no edges, no pluses
   t.equal(list.match(/(^([\+][\s]*d\b))/g), null, 'should be no "+ d" entries');
   t.equal(list.match(/(^([\+][\s]*e\b))/g), null, 'should be no "+ e" entries');
   
-  // no edges, use minuses
+  //no edges, use minuses
   t.equal(list.match(/[\-][\s]d/g).length, 6, 'should be 6 "- d" entries');
   t.equal(list.match(/[\-][\s]e/g).length, 4, 'should be 4 "- e" entries');
   
