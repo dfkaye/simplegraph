@@ -305,7 +305,7 @@ test('parents finds all graphs that depend on specified graph id', function (t) 
   var visitor = main.parents(id);
   
   t.equal(visitor.results.length, 3, 'should find 3 graphs');
-})
+});
 
 test('parents with cycle', function (t) {
 
@@ -320,7 +320,26 @@ test('parents with cycle', function (t) {
   
   bdbCycle(main);
   
-  t.throws(exec, 'should not throw on cycle');
+  t.throws(exec, 'should throw on cycle');
+});
+
+test('parents with empty or non-string param', function (t) {
+  
+  t.plan(2);
+  
+  var main = fixture('main');
+
+  function execBlank() {
+    main.parents('');
+  }
+  
+  t.throws(execBlank, 'should throw on blank id');
+  
+  function execNonString() {
+    main.parents(13);
+  }
+  
+  t.throws(execNonString, 'should throw on non-string id');
 });
 
 test('subgraph finds all graphs under the specified graph id', function (t) {

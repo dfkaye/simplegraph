@@ -6,7 +6,8 @@ if (typeof module != 'undefined' && module.exports) {
 
 /*
  * @constructor simplegraph (new is optional)
- * param string id - required
+ * @param string id - required
+ * @returns instance of simplegraph
  */
 function simplegraph(id) {
 
@@ -180,10 +181,11 @@ simplegraph.prototype.visitor = function visitor(fn) {
 };
 
 /*
-* @method remove detaches all occurrences of subgraph from the graph and its descendants.
-* param string id - required id of the subgraph to be detachd
-* returns an array of graphs from which the target has been detachd.
-*/
+ * @method remove detaches all occurrences of subgraph from the graph and its descendants.
+ * @param string id - required id of the subgraph to be detached
+ * @returns a visitor with the results field as array of graphs from which the target has 
+ * been detached.
+ */
 simplegraph.prototype.remove = function remove(id) {
 
   var visitor = this.visitor(function(edge) {
@@ -200,11 +202,15 @@ simplegraph.prototype.remove = function remove(id) {
 /*
  * @method parents finds all graphs in subgraph that depend on graph with given id.
  * @param string id - required id for the target graph.
- * @returns a visitor with the results field as array of ids of graphs that depend on the 
+ * @returns a visitor with the results field as array of graphs that depend on the 
  *  target subgraph.
  */
 simplegraph.prototype.parents = function parents(id) {
 
+  if (!id || typeof id != 'string') {
+    throw new Error('parents() requires non-empty string id argument.')
+  }
+  
   var visitor = this.visitor(function(edge) {
     // *this* is the visitor
     // uses closure on id param
@@ -218,8 +224,7 @@ simplegraph.prototype.parents = function parents(id) {
 
 /*
  * @method subgraph finds all graphs in subgraph that the graph with given id depends on.
- * @returns a visitor with the results field as array of ids of graphs under the target 
- *  subgraph.
+ * @returns a visitor with the results field as array of graphs under the target subgraph.
  */
 simplegraph.prototype.subgraph = function subgraph() {
 
@@ -235,9 +240,9 @@ simplegraph.prototype.subgraph = function subgraph() {
 };
 
 /*
- * @method descendant locates child or descendant with matching id in the graph or its 
- *  subgraph.  Uses the visitor in order to avoid throwing errors.  First match terminates 
- *  search.
+ * @method descendant locates the first child or descendant with matching id in the graph 
+ *  or its subgraph. First match terminates search.
+ * @param string id
  * @returns first matching child or descendant graph
  */
 simplegraph.prototype.descendant = function descendant(id) {
@@ -260,9 +265,9 @@ simplegraph.prototype.descendant = function descendant(id) {
 };
 
 /*
- * @method list - alternate version of list iterator - shows deficiency of depth-first 
- *  traversal - uses the visitor.after() post-visit callback approach.
- * @returns results array of visited graphs
+ * @method list prints a tree-like structure of the current graph with subgraph elements, 
+ *  using the visitor.after() post-visit callback approach.
+ * @returns string output of the results array of visited graphs
  */
 simplegraph.prototype.list = function list() {
 
@@ -303,7 +308,8 @@ simplegraph.prototype.list = function list() {
 };
 
 /*
- * returns the visitor's results array, depth first
+ * @method sort performs depth-first topological sort on the current graph.
+ * @returns the visitor's results array, depth first
  */
 simplegraph.prototype.sort = function sort() {
 

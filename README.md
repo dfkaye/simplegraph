@@ -275,9 +275,9 @@ or migrations as necessary.
     
 __parents(id) - aka 'fan-in'__
 
-`parents()` accepts a string id for an item in the graph, and finds all 
-graphs in subgraph that depend on graph with given id. Found graphs are returned 
-in the `visitor.results` array.
+`parents()` accepts a string id for an item in the graph, and finds all graphs 
+in subgraph that depend on graph with given id. Found graphs are returned in the 
+`visitor.results` array.
 
 `parents()` always returns a `visitor` object with a `visitor.results' array.
 
