@@ -3,9 +3,11 @@ simplegraph
 
 Makes a *fairly* simple graph structure (used to be "simple-graph")
 
+update
+------
 
-__[ 19 DEC 2013 ~ REFACTORING WITH BREAKING CHANGES IN PROGRESS ]__
-
+[19 DEC 2013] ~ v0.1.0 contains several breaking changes ~ if you're using an 
+earlier version please update.
 
 Thanks to Ferry Boender
 -----------------------
@@ -32,7 +34,6 @@ __View the generated test-bundle page on
 <a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
    target='_new' title='opens in new tab or window'>rawgithub</a>.__
 
-   
 install
 -------
 
@@ -45,7 +46,7 @@ use
 
 node.js
 
-    var simplegraph = require('../simplegraph');
+    var simplegraph = require('simplegraph');
 
 browser
 
@@ -91,18 +92,38 @@ No graph data element is stored in a graph element - __final answer__
 traversal
 ---------
 
+__[20 DEC 2013 ] API/DOC IN PROGRESS__
+
+The traversal API is not ideal, but has the virtue of being testable so far...
+
 Some graph child methods use procedural code (for-loops) rather than iterator 
-functions in order to support IE6-8 -- and execute a little faster (iterators 
-run just under an order of magnitude slower).
+functions in order to support IE6-8 - and to execute faster (iterators run just 
+under an order of magnitude slower).
 
 The *resolve* (traversal) methods use visitor iteration methods internally.  The 
 pattern looks like this:
 
-    graphInstance.resolve
-      visitor
-        iteratorFunction
-      and/or 
-        visitor.postProcessFunction
+    // pass visit function to the visitor method...
+    var visitor = this.visitor(function visit(edge) {
+      // process this edge
+    });
+    
+    // or define visit directly:
+    visitor.visit = function (edge) {
+      // process this edge
+    };
+    
+    // define an optional post traversal processing method
+    visitor.after = function (edge) {
+      // post-process this edge
+    };
+    
+    // run it
+    this.resolve(visitor);
+    
+    // inspect it
+    visitor.results.join('');
+    // etc.
 
 __resolve(visitor?)__
 
@@ -116,15 +137,11 @@ __If the `resolve()` method detects a cycle, it will throw an error.__
 
 If no cycle or other error occurs, `resolve()` returns a `visitor` object.
 
-
-__[ API/DOC IN PROGRESS ]__
-
-
 __visitor(fn?)__
 
 Any graph object can create a `visitor` object. A visitor has an `id` set to the 
 creating graph's id, an `ids` array, `visited` and `visiting` maps, a `results` 
-array, and a `done()` method.  
+array, and a `done()` method.
 
 The `visitor()` method can optionally take a `visit` function argument. The 
 visit function will run on the current graph being visited *before* descending 
@@ -133,10 +150,20 @@ to edges. The function takes a graph param representing a child or edge.
 The visitor *object* is used internally by the `resolve()` method for tracking 
 visited subgraphs, and for throwing an `error` if a cycle is detected.
 
+A fully returned visitor has the following properties:
+    
+    .id ~ string id of the graph for which visitor is first created
+    .ids ~ array of graph ids visited
+    .results ~ collecting parameter array of results 
+    .visited ~ map of ids used internally for cycle detection
+    .visiting ~ map of ids used internally for cycle detection
+    .done ~ method that halts further processing or traversals when called
+    .visit ~ optional iteration function to run when visiting a graph element
+    .after ~ optional post-processing function to run when a graph's depth 
+            traversal is completed
 
-__[ API/DOC IN PROGRESS ]__
-  
-  
+__visitor examples__
+            
 The following snippet from the `remove(id)` method demonstrates a visitor usage. 
 It calls `detach` internally and pushes detached edges to the visitor's results 
 array:
@@ -151,26 +178,90 @@ array:
     
     return this.resolve(visitor);
 
-    
-__[ API/DOC IN PROGRESS ]__
+which lets you retrieve the visitor's results array:
 
-
-    // inspect visitor
-    id: graph.id  // in this case it will be 'main'
-    ids: []       // ids of each graph element visited
-    results: []   // collecting array of results 
-    visited: {}   // internal use for cycle detection
-    visiting: {}  // internal use for cycle detection
-    done: function () {
-      this.exit = true;
-    },        
-    visit: fn   // optional iteration function to run visiting a graph element
-    after: null   // optional post-processing function to run when graph's 
-                  //  depth traversal is completed
+  var results = remove('something').results;
   
+__visitor.done()__
 
+The following snippet from `descendant(id)` shows a call to `done()`:
 
+    var child = false;
+    
+    var visitor = this.visitor(function(edge) {
+    
+      // uses closure on descendant(id) param
+      var item = edge.edges[id];
+      
+      if (item) {
+        child = item;
+        
+        this.done(); // halt further processing
+      }
+    });
+    
+    this.resolve(visitor);
 
+    return child;
+  
+__visitor.after = function () {}__
+
+The following snippet from `sort()` shows how to define an `after` callback:
+
+    var visitor = this.visitor();
+    
+    visitor.after = function (edge) {
+      
+      // if the current edge has not been marked as visited yet,
+      // unshift it to the front of results if it's a leaf, 
+      // otherwise, push it to the end if it has edges
+      
+      if (!this.visited[edge.id]) {
+      
+        if (edge.empty()) {
+          this.results.unshift(edge.id);
+        } else {
+          this.results.push(edge.id);
+        }
+      }
+    };
+
+You can define `visit` as a method directly on a created `visitor` rather than 
+passing it as a parameter.  The following snippet from the `list()` method shows 
+how to define `visit`, `after`, and some custom or nonce properties:
+
+    var visitor = this.visitor();
+
+    // assign nonce properties we can use in visit and after functions
+    visitor.depth = -1;
+    visitor.INDENT = 2;
+    
+    // explicit visit assignment
+    visitor.visit = function (edge) {
+          
+      // unset depth after() visiting...
+      this.depth += this.INDENT; 
+      
+      for (var i = 0; i < this.depth; i++) {
+        this.results.push(' ');
+      }
+      
+      if (edge.empty()) {
+        this.results.push('-');
+      } else {
+        this.results.push('+');
+      }
+      
+      this.results.push(' ' + edge.id + '\n');
+    };
+    
+    // post-processing aop
+    // unset depth after() visiting...
+    visitor.after = function (edge) {
+      this.depth -= this.INDENT;
+    };
+  
+  
 methods
 -------
 
@@ -239,10 +330,6 @@ found matching the id, the child is returned; else `has()` returns __false__.
     // => a
     main.has('a')
     // false
-    
-__indexOf(id)__
-
-__[ deprecated and removed ]__
 
 __descendant(id)__
 
@@ -306,7 +393,7 @@ included as a dependency in the subgraph.
     
 __size()__
 
-`size()` returns the number of edges in the subgraph.
+`size()` returns the number of edges under a graph.
 
     // main -> a -> b
     //              b -> d -> e
@@ -318,10 +405,9 @@ __size()__
     
 __list(depth?)__
 
-[ 5 AUG 2013 ] -- `list()` is currently a 'just for show' method. There's a 
-straight-forward implementation commented out, and a visitor-based impl that 
-adds [ 27 SEPT 2013 ] a `visitor.after()` method - meaning some AOP is creeping 
-into the `resolve()` algorithm, so that definitely needs re-visiting (pun - sorry).
+`list()` is really a 'just for show' visitor-based method with both 
+`visitor.visit` and `visitor.after` methods - meaning some AOP is creeping into 
+the `resolve()` algorithm, so that definitely needs re-visiting (pun - sorry).
 
 `list()` iterates over a graph and returns a string showing the graph and its 
 subgraph, indented, something like:
@@ -353,10 +439,10 @@ subgraph, indented, something like:
 
 __sort()__
 
-[16 DEC 2013] -- `sort()` uses `visitor` internally, and returns an array of ids 
-found from the current graph being 'sorted' in depth-first order.
+`sort()` uses `visitor` internally, and returns an array of ids found from the 
+current graph being 'sorted' in depth-first order.
 
-Call sort() on any graph element to retrieve the topo-sort for that element's 
+Call `sort()` on any graph element to retrieve the topo-sort for that element's 
 subgraph.
 
     var main = simplegraph('main');
@@ -420,9 +506,10 @@ The rawgithub page includes a `dom-console.js` shim that outputs console
 statements in the DOM, useful because tape outputs its results to 
 `console.log()`.
 
-__View the generated test-bundle page on 
+__View the generated browser test bundle page on 
 <a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
    target='_new' title='opens in new tab or window'>rawgithub</a>.__
+
    
 TODO
 ----
@@ -433,12 +520,13 @@ TODO
     a (dare I say it) separate process or worker or iframe... or maybe an excuse 
     to try promises or streams...
 + add serialize() (and deserialize ?) support as part of that *(maybe)*    
-+ _add code snippets for each method in the README (especially for visitor)_
-+ _split up the tests into smaller method-specific files_
-+ get off testling ~ testling is unreliable ~ shouldn't have to keep fixing
-    their car, just rent another one
-+ get off of tape, go with jasmine ~ travis works with jasmine-node
++ get off testling (?) ~ not always reliable
++ port tape tests to jasmine ~ travis works with jasmine-node
++ setup test suites for testem.js
++ _split tests into smaller method-specific files_ *maybe*
 
++ <del>_add code snippets for each method in the README (especially for 
+    visitor)_</del>
 + <del>__fix recursion performance on edges__
   - change edges from array to a map
   - remove `indexOf`
@@ -452,9 +540,9 @@ TODO
     looping ~ using an edge *map* reduces attach() and size() times enough that 
     a big fixture with 2 million items is processed in 2-3s good enough for 
     now__</del>
-+ <del>add `empty` method to replace the for-in fakeouts</del>
++ <del>add `empty()` method to replace the for-in fakeouts</del>
 + <del>rename find() to descendant()</del>
-+ <del>_add topological sort_</del>
++ <del>[16 DEC 2013] _add topological sort_</del>
 + <del>rename `require`'d graph function to `simplegraph`</del>
 + <del>massive speed up of big-fixture setup using edges directly rather than 
     attach()</del>
@@ -495,8 +583,6 @@ __constructor__
 + <del>rename delete() to remove()</del> - because delete is a keyword in certain browsers...
 
 __visitor__
-
-+ some AOP before/after/done is creeping in ~ need to re-examine this api
 
 + <del>refactor the visitor - set visitor.id to creating graph.id by default</del> 
 + <del>refactor the visitor, resolve the visitor.walk vs graph.resolve quarrel</del> 

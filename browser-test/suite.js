@@ -9555,7 +9555,7 @@ test('size returns number of edges', function (t) {
   t.equal(main.size(), size, 'should find [' + size + '] edges');
 });
 
-test('find child', function (t) {
+test('descendant finds child', function (t) {
 
   t.plan(1);
   
@@ -9572,7 +9572,7 @@ test('find child', function (t) {
   t.equal(child.id, id, 'should find child');
 });
 
-test('find descendant', function (t) {
+test('descendant finds descendant', function (t) {
 
   t.plan(1);
   
@@ -9583,7 +9583,7 @@ test('find descendant', function (t) {
   t.equal(descendant.id, id, 'should find \'e\'');
 });
 
-test('find non-existent', function (t) {
+test('descendant non-existent', function (t) {
 
   t.plan(1);
   
@@ -9593,7 +9593,7 @@ test('find non-existent', function (t) {
   t.notOk(bonk, 'should return no value for \'bonk\'');
 });
 
-test('find descendant in cycle', function (t) {
+test('descendant finds descendant in cycle', function (t) {
 
   t.plan(2);
   
@@ -9619,7 +9619,7 @@ test('find descendant in cycle', function (t) {
   t.equal(descendant.id, id, 'should find in cycle');
 });
 
-test('find non-existent in cycle', function (t) {
+test('descendant non-existent in cycle', function (t) {
 
   t.plan(2);
   
@@ -9661,7 +9661,7 @@ test('print list', function (t) {
   t.equal(list.match(/[\-][\s]e/g).length, 4, 'should be 4 "- e" entries');
 });
 
-test('sort fixture', function (t) {
+test('sort', function (t) {
 
   t.plan(1);
   
@@ -9672,7 +9672,7 @@ test('sort fixture', function (t) {
   t.equal(results.join(' '), expected.join(' '));
 });
 
-test('sort fixture subgraph', function (t) {
+test('sort subgraph', function (t) {
 
   t.plan(1);
 
@@ -9702,7 +9702,11 @@ test('sort b-fixture', function (t) {
   b.attach(a);
   b.attach(d);
   
-  var expected = ['e','c','d', 'a', 'b'];
+  // c and e are leaf items req'd by d
+  // unshift c <- a
+  // unshift e <- d <- a <- b  
+  // then push each d <- a <- b
+  var expected = ['e', 'c', 'd', 'a', 'b'];
   
   var results = b.sort();
   
@@ -9764,6 +9768,7 @@ test('sort complex fixture', function (t) {
   // Build out expected ids array
   
   // fixture-m paths depth first
+  
   // leaf edges
   // z: m-r-y-v-w-z
   expected.push('z');
@@ -9771,6 +9776,7 @@ test('sort complex fixture', function (t) {
   expected.push('x');
   // t: m-r-u-t)
   expected.push('t');
+  
   // parent/owner edges
   // q: m-q
   expected.push('q');
@@ -9788,7 +9794,9 @@ test('sort complex fixture', function (t) {
   expected.push('m');  
   
   // fixture-n paths depth first
+  
   // no leaf edges
+  
   // parent/owner edges  
   // s: n-o-s
   expected.push('s');
