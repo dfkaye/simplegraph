@@ -60,15 +60,16 @@ Everyone should figure out at least one directed acyclic graph data structure in
 JavaScript.  Here's mine.
 
 I'm using this for learning tests in order to work out dependency-loading trivia 
-in another project.
+in another project, and re-learning performance optimizations for scaling with 
+big collections (over 2 million elements in the big-fixture tests).
 
 what makes it simple?
 ---------------------
 
-There is no concept of a *node* or node lookup map.  Rather, every object on a 
-graph is a graph instance whose *edges* are other graph instances.  Nothing 
-special, but traversal is required by several methods, and making *that* simple 
-has been a challenge.
+There is no concept of a *node* or external node lookup map.  Rather, every 
+object on a graph is a graph instance whose *edges* are other graph instances.  
+Nothing special - perhaps a bit na&iuml;ve, but traversal is required by several 
+methods, and making *that* simple has been a challenge.
    
 structure
 ---------
@@ -524,6 +525,7 @@ TODO
 + port tape tests to jasmine ~ travis works with jasmine-node
 + setup test suites for testem.js
 + _split tests into smaller method-specific files_ *maybe*
++ add build task dependency or module dependency example
 
 + <del>_add code snippets for each method in the README (especially for 
     visitor)_</del>
