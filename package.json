@@ -1,6 +1,6 @@
 {
   "name" : "simplegraph",
-  "version" : "0.1.0",
+  "version" : "0.1.1",
   "description": "JavaScript kata for directed acyclic graph data structure",
   "homepage" : "https://github.com/dfkaye/simplegraph",
   "author": {

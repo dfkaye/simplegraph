@@ -27,12 +27,12 @@ testling
 
 [![browser support](https://ci.testling.com/dfkaye/simplegraph.png)](https://ci.testling.com/dfkaye/simplegraph)
 
-rawgithub
----------
+rawgit
+------
 
 __View the generated test-bundle page on 
-<a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
-   target='_new' title='opens in new tab or window'>rawgithub</a>.__
+<a href='//rawgit.com/dfkaye/simplegraph/master/browser-test/suite.html' 
+   target='_new' title='opens in new tab or window'>rawgit</a>.__
 
 install
 -------
@@ -487,10 +487,10 @@ running just the simple test:
 
     npm run simple
 
-rawgithub test page
+rawgit test page
 -------------------
 
-In order to verify that the test suite runs locally or on rawgithub - and rather 
+In order to verify that the test suite runs locally or on rawgit - and rather 
 than re-create the tests using jasmine, QUnit, or what-have-you, I now [use 
 browserify](http://browserify.org) to create a test-bundle starting with the 
 test suite file itself.  This pulls in the `tape` module and its dependencies 
@@ -503,13 +503,13 @@ Use the alias for that command as defined in package.json:
 
     npm run bundle
 
-The rawgithub page includes a `dom-console.js` shim that outputs console 
+The rawgit page includes a `dom-console.js` shim that outputs console 
 statements in the DOM, useful because tape outputs its results to 
 `console.log()`.
 
 __View the generated browser test bundle page on 
-<a href='//rawgithub.com/dfkaye/simplegraph/master/browser-test/suite.html' 
-   target='_new' title='opens in new tab or window'>rawgithub</a>.__
+<a href='//rawgit.com/dfkaye/simplegraph/master/browser-test/suite.html' 
+   target='_new' title='opens in new tab or window'>rawgit</a>.__
 
    
 TODO

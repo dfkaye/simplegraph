@@ -1,6 +1,6 @@
 // big-fixture-test
-var test = require('tape')
-var simplegraph = require('../simplegraph')
+var test = require('tape');
+var simplegraph = require('../simplegraph');
 
 /*** TESTS ***/
 

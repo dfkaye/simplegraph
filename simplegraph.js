@@ -12,11 +12,11 @@ if (typeof module != 'undefined' && module.exports) {
 function simplegraph(id) {
 
   if (!(this instanceof simplegraph)) {
-    return new simplegraph(id)
+    return new simplegraph(id);
   }
   
   if (!id || typeof id != 'string') {
-    throw new Error('simplegraph() requires non-empty string id argument.')
+    throw new Error('simplegraph() requires non-empty string id argument.');
   }
   
   this.id = id;
